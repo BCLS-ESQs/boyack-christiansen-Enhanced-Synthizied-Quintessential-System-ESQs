@@ -1,1 +1,645 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#1a73e8">
+    <title>AI RAID - Boyack Christiansen Legal</title>
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/png" href="favicon.png">
+    
+    <!-- Mobile Optimized -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="AI RAID">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+            padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 15px 20px;
+            text-align: center;
+            box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 600;
+            color: #1a73e8;
+            margin-bottom: 5px;
+        }
+
+        .header .subtitle {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .ai-status {
+            display: flex;
+            gap: 10px;
+            padding: 15px 20px;
+            background: rgba(255, 255, 255, 0.9);
+            margin: 15px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .ai-indicator {
+            flex: 1;
+            text-align: center;
+            padding: 10px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .ai-indicator.online {
+            background: #e8f5e8;
+            color: #2e7d2e;
+        }
+
+        .ai-indicator.offline {
+            background: #fce8e6;
+            color: #c5221f;
+        }
+
+        .main-interface {
+            padding: 20px;
+            max-width: 100%;
+        }
+
+        .query-input {
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .query-input textarea {
+            width: 100%;
+            min-height: 100px;
+            border: none;
+            font-size: 16px;
+            font-family: inherit;
+            resize: vertical;
+            outline: none;
+        }
+
+        .query-input textarea::placeholder {
+            color: #999;
+        }
+
+        .ai-selector {
+            display: flex;
+            gap: 10px;
+            margin: 15px 0;
+            flex-wrap: wrap;
+        }
+
+        .ai-option {
+            flex: 1;
+            min-width: 100px;
+            padding: 12px 8px;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 14px;
+            background: white;
+        }
+
+        .ai-option.selected {
+            border-color: #1a73e8;
+            background: #e8f0fe;
+            color: #1a73e8;
+        }
+
+        .ai-option:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+
+        .send-button {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #1a73e8, #4285f4);
+            color: white;
+            border: none;
+            border-radius: 15px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .send-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(26, 115, 232, 0.3);
+        }
+
+        .send-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .response-area {
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            margin-top: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            min-height: 200px;
+        }
+
+        .response-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .ai-badge {
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .ai-badge.claude {
+            background: #f3e5f5;
+            color: #7b1fa2;
+        }
+
+        .ai-badge.gemini {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+
+        .ai-badge.openai {
+            background: #e8f5e8;
+            color: #388e3c;
+        }
+
+        .ai-badge.synthesis {
+            background: #fff3e0;
+            color: #f57c00;
+        }
+
+        .token-info {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .response-content {
+            font-size: 16px;
+            line-height: 1.6;
+            color: #333;
+        }
+
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .loading::after {
+            content: '';
+            width: 20px;
+            height: 20px;
+            border: 2px solid #e0e0e0;
+            border-top: 2px solid #1a73e8;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-left: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .quick-actions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .quick-action {
+            background: white;
+            border-radius: 15px;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .quick-action:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+        }
+
+        .quick-action .icon {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+
+        .quick-action .label {
+            font-size: 14px;
+            font-weight: 500;
+            color: #333;
+        }
+
+        .settings-panel {
+            position: fixed;
+            top: 0;
+            right: -300px;
+            width: 300px;
+            height: 100vh;
+            background: white;
+            box-shadow: -2px 0 20px rgba(0,0,0,0.1);
+            transition: right 0.3s;
+            z-index: 200;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .settings-panel.open {
+            right: 0;
+        }
+
+        .settings-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0,0,0,0.5);
+            z-index: 150;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s;
+        }
+
+        .settings-overlay.open {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .settings-button {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 40px;
+            height: 40px;
+            background: rgba(255, 255, 255, 0.9);
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            z-index: 110;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        @media (max-width: 768px) {
+            .ai-selector {
+                flex-direction: column;
+            }
+            
+            .ai-option {
+                flex: none;
+            }
+            
+            .quick-actions {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .settings-panel {
+                width: 100%;
+                right: -100%;
+            }
+        }
+
+        .install-prompt {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+            padding: 15px 20px;
+            margin: 15px;
+            border-radius: 15px;
+            text-align: center;
+            cursor: pointer;
+            display: none;
+        }
+
+        .install-prompt.show {
+            display: block;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateY(-20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <!-- PWA Install Prompt -->
+    <div id="install-prompt" class="install-prompt">
+        📱 Install AI RAID as an app for quick access!
+    </div>
+
+    <!-- Settings Button -->
+    <button class="settings-button" onclick="toggleSettings()">⚙️</button>
+
+    <!-- Settings Panel -->
+    <div id="settings-overlay" class="settings-overlay" onclick="toggleSettings()"></div>
+    <div id="settings-panel" class="settings-panel">
+        <h3>AI RAID Settings</h3>
+        <div style="margin: 20px 0;">
+            <label>
+                <input type="checkbox" id="auto-route" checked> Auto-route queries
+            </label>
+        </div>
+        <div style="margin: 20px 0;">
+            <label>
+                <input type="checkbox" id="token-tracking" checked> Track token usage
+            </label>
+        </div>
+        <div style="margin: 20px 0;">
+            <label>Default AI:
+                <select id="default-ai">
+                    <option value="auto">Auto-select</option>
+                    <option value="claude">Claude</option>
+                    <option value="gemini">Gemini Pro</option>
+                    <option value="openai">OpenAI</option>
+                </select>
+            </label>
+        </div>
+        <button onclick="clearHistory()" style="width: 100%; padding: 10px; margin-top: 20px; background: #f44336; color: white; border: none; border-radius: 8px;">
+            Clear History
+        </button>
+    </div>
+
+    <!-- Header -->
+    <div class="header">
+        <h1>🤖 AI RAID System</h1>
+        <div class="subtitle">Boyack Christiansen Legal Solutions</div>
+    </div>
+
+    <!-- AI Status Indicators -->
+    <div class="ai-status">
+        <div class="ai-indicator online" id="claude-status">
+            <div>Claude</div>
+            <div style="font-size: 10px;">Online</div>
+        </div>
+        <div class="ai-indicator online" id="gemini-status">
+            <div>Gemini Pro</div>
+            <div style="font-size: 10px;">Online</div>
+        </div>
+        <div class="ai-indicator online" id="openai-status">
+            <div>OpenAI</div>
+            <div style="font-size: 10px;">Online</div>
+        </div>
+        <div class="ai-indicator online" id="synthesis-status">
+            <div>Synthesis</div>
+            <div style="font-size: 10px;">Ready</div>
+        </div>
+    </div>
+
+    <!-- Main Interface -->
+    <div class="main-interface">
+        <!-- Query Input -->
+        <div class="query-input">
+            <textarea 
+                id="query-text" 
+                placeholder="Ask anything... The AI RAID system will route your query to the best AI or combine multiple responses for optimal results."
+            ></textarea>
+            
+            <!-- AI Selection -->
+            <div class="ai-selector">
+                <div class="ai-option selected" data-ai="auto">
+                    🎯 Auto-Route
+                </div>
+                <div class="ai-option" data-ai="claude">
+                    🧠 Claude
+                </div>
+                <div class="ai-option" data-ai="gemini">
+                    ⚡ Gemini
+                </div>
+                <div class="ai-option" data-ai="openai">
+                    💬 OpenAI
+                </div>
+                <div class="ai-option" data-ai="synthesis">
+                    🔀 Multi-AI
+                </div>
+            </div>
+            
+            <button class="send-button" onclick="sendQuery()" id="send-btn">
+                Send Query
+            </button>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="quick-actions">
+            <div class="quick-action" onclick="quickQuery('Analyze this case for potential issues')">
+                <div class="icon">⚖️</div>
+                <div class="label">Case Analysis</div>
+            </div>
+            <div class="quick-action" onclick="quickQuery('Draft a motion template')">
+                <div class="icon">📝</div>
+                <div class="label">Document Draft</div>
+            </div>
+            <div class="quick-action" onclick="quickQuery('Research recent similar cases')">
+                <div class="icon">🔍</div>
+                <div class="label">Legal Research</div>
+            </div>
+            <div class="quick-action" onclick="quickQuery('Judge Walton procedural preferences')">
+                <div class="icon">👨‍⚖️</div>
+                <div class="label">Judge Intel</div>
+            </div>
+        </div>
+
+        <!-- Response Area -->
+        <div class="response-area" id="response-area" style="display: none;">
+            <div class="response-header">
+                <div class="ai-badge" id="response-ai">Multi-AI Response</div>
+                <div class="token-info" id="token-info">Tokens: 0</div>
+            </div>
+            <div class="response-content" id="response-content">
+                <!-- AI responses will appear here -->
+            </div>
+        </div>
+    </div>
+
+    <script src="ai-router.js"></script>
+    <script src="mobile-app.js"></script>
+    <script>
+        // Global variables
+        let selectedAI = 'auto';
+        let isProcessing = false;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeAIStatus();
+            setupEventListeners();
+            checkPWAInstall();
+        });
+
+        function initializeAIStatus() {
+            // Check AI availability (simulated for now)
+            const ais = ['claude', 'gemini', 'openai', 'synthesis'];
+            ais.forEach(ai => {
+                const status = document.getElementById(`${ai}-status`);
+                // In real implementation, ping each AI service
+                status.className = 'ai-indicator online';
+            });
+        }
+
+        function setupEventListeners() {
+            // AI selector
+            document.querySelectorAll('.ai-option').forEach(option => {
+                option.addEventListener('click', function() {
+                    document.querySelectorAll('.ai-option').forEach(opt => 
+                        opt.classList.remove('selected'));
+                    this.classList.add('selected');
+                    selectedAI = this.getAttribute('data-ai');
+                });
+            });
+
+            // Enter key to send
+            document.getElementById('query-text').addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' && e.metaKey) {
+                    sendQuery();
+                }
+            });
+        }
+
+        function sendQuery() {
+            const queryText = document.getElementById('query-text').value.trim();
+            if (!queryText || isProcessing) return;
+
+            isProcessing = true;
+            document.getElementById('send-btn').disabled = true;
+            document.getElementById('send-btn').textContent = 'Processing...';
+
+            // Show response area
+            const responseArea = document.getElementById('response-area');
+            responseArea.style.display = 'block';
+            
+            // Show loading
+            document.getElementById('response-content').innerHTML = 
+                '<div class="loading">Processing your query</div>';
+
+            // Route query based on selection
+            routeQuery(queryText, selectedAI).then(response => {
+                displayResponse(response);
+            }).catch(error => {
+                displayError(error);
+            }).finally(() => {
+                isProcessing = false;
+                document.getElementById('send-btn').disabled = false;
+                document.getElementById('send-btn').textContent = 'Send Query';
+            });
+        }
+
+        function quickQuery(text) {
+            document.getElementById('query-text').value = text;
+            sendQuery();
+        }
+
+        function displayResponse(response) {
+            const aiBadge = document.getElementById('response-ai');
+            const tokenInfo = document.getElementById('token-info');
+            const content = document.getElementById('response-content');
+
+            // Update badge
+            aiBadge.textContent = response.aiUsed;
+            aiBadge.className = `ai-badge ${response.aiUsed.toLowerCase().replace(' ', '')}`;
+
+            // Update token info
+            tokenInfo.textContent = `Tokens: ${response.tokensUsed || 0}`;
+
+            // Update content
+            content.innerHTML = response.content;
+
+            // Scroll to response
+            document.getElementById('response-area').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function displayError(error) {
+            document.getElementById('response-content').innerHTML = 
+                `<div style="color: #f44336; padding: 20px; text-align: center;">
+                    ❌ Error: ${error.message || 'Something went wrong'}
+                </div>`;
+        }
+
+        function toggleSettings() {
+            const panel = document.getElementById('settings-panel');
+            const overlay = document.getElementById('settings-overlay');
+            
+            if (panel.classList.contains('open')) {
+                panel.classList.remove('open');
+                overlay.classList.remove('open');
+            } else {
+                panel.classList.add('open');
+                overlay.classList.add('open');
+            }
+        }
+
+        function clearHistory() {
+            localStorage.removeItem('ai-raid-history');
+            alert('History cleared!');
+        }
+
+        function checkPWAInstall() {
+            let deferredPrompt;
+            
+            window.addEventListener('beforeinstallprompt', (e) => {
+                e.preventDefault();
+                deferredPrompt = e;
+                document.getElementById('install-prompt').classList.add('show');
+            });
+
+            document.getElementById('install-prompt').addEventListener('click', () => {
+                if (deferredPrompt) {
+                    deferredPrompt.prompt();
+                    deferredPrompt.userChoice.then((choiceResult) => {
+                        deferredPrompt = null;
+                        document.getElementById('install-prompt').classList.remove('show');
+                    });
+                }
+            });
+        }
+    </script>
+</body>
+</html>
