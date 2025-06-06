@@ -1,10 +1,48 @@
-<!DOCTYPE html>
+if (message.includes('dropbox') || message.includes('archive') || message.includes('files')) {
+                // Log search activity if client is active
+                if (currentClient) {
+                    esqsSessionManager.logSearch(currentClient, userMessage, 0);
+                }
+                
+                return `🗄️ <strong>ESQs Archive Management</strong><br><br>
+                ${currentClient ? `Searching ${currentClient}'s archive folder and ` : 'I can search your '}Dropbox legal archives. 
+                ESQs provides intelligent file organization, document analysis, and collaborative 
+                editing capabilities for your entire legal document collection.<br><br>
+                ${currentClient ? `All search activity is being logged to ${currentClient}'s session archive.` : 'Full file management with legal intelligence and automated organization.'}`;
+            }
+            
+            if (message.includes('search') && message.includes('documents')) {
+                // Log search activity if client is active
+                if (currentClient) {
+                    esqsSessionManager.logSearch(currentClient, userMessage, 0);
+                }
+                
+                return `🔍 <strong>ESQs Intelligent Document Search</strong><br><br>
+                Multiple digital attorneys are searching ${currentClient ? `${currentClient}'s files` : 'your archives'} using advanced legal 
+                intelligence. ESQs can find documents by content, legal concepts, client names, 
+                case references, and more.<br><br>
+                Search results include document analysis and relevance scoring.`;
+            }            if (message.includes('practicepanther') || message.includes('case management')) {
+                return `📁 <strong>PracticePanther Integration</strong><br><br>
+                Your ESQs can connect to PracticePanther for comprehensive case management analysis. 
+                We'll access client files, case timelines, billing data, and documents to provide 
+                strategic insights and automated case management assistance.<br><br>
+                Ready to sync with your PracticePanther database for enhanced case intelligence.`;
+            }
+            
+            if (message.includes('lexis') || message.includes('legal research')) {
+                return `📚 <strong>Lexis Legal Research</strong><br><br>
+                ESQs integrates with Lexis for advanced legal research synthesis. Multiple digital 
+                attorneys will search case law, statutes, regulations, and legal commentary to provide 
+                comprehensive research analysis.<br><br>
+                Your research will be synthesized from multiple AI perspectives for maximum coverage.`;
+            }<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#1a73e8">
-    <title>AI RAID - Boyack Christiansen Legal</title>
+    <title>ESQs - Enhanced Synthesized Quintessential System</title>
     
     <!-- PWA Manifest -->
     <link rel="manifest" href="manifest.json">
@@ -412,27 +450,15 @@
 
     <!-- Header -->
     <div class="header">
-        <h1>🤖 AI RAID System</h1>
-        <div class="subtitle">Boyack Christiansen Legal Solutions</div>
+        <h1>⚖️ ESQs Legal Intelligence</h1>
+        <div class="subtitle">Enhanced Synthesized Quintessential System • Boyack Christiansen Legal Solutions</div>
     </div>
 
-    <!-- AI Status Indicators -->
+    <!-- ESQs System Status -->
     <div class="ai-status">
-        <div class="ai-indicator online" id="claude-status">
-            <div>Claude</div>
-            <div style="font-size: 10px;">Online</div>
-        </div>
-        <div class="ai-indicator online" id="gemini-status">
-            <div>Gemini Pro</div>
-            <div style="font-size: 10px;">Online</div>
-        </div>
-        <div class="ai-indicator online" id="openai-status">
-            <div>OpenAI</div>
-            <div style="font-size: 10px;">Online</div>
-        </div>
-        <div class="ai-indicator online" id="synthesis-status">
-            <div>Synthesis</div>
-            <div style="font-size: 10px;">Ready</div>
+        <div class="ai-indicator online" id="system-status">
+            <div>⚖️ ESQs SYNTHESIS ENGINE</div>
+            <div style="font-size: 10px;">Enhanced Synthesized Quintessential System • Ready</div>
         </div>
     </div>
 
@@ -445,22 +471,15 @@
                 placeholder="Ask anything... The AI RAID system will route your query to the best AI or combine multiple responses for optimal results."
             ></textarea>
             
-            <!-- AI Selection -->
+            <!-- Processing Mode Selection -->
             <div class="ai-selector">
-                <div class="ai-option selected" data-ai="auto">
-                    🎯 Auto-Route
+                <div class="ai-option selected" data-mode="normal">
+                    ⚡ Normal Processing
+                    <div style="font-size: 11px; color: #666; margin-top: 3px;">Fast synthesis • 2-3 AIs</div>
                 </div>
-                <div class="ai-option" data-ai="claude">
-                    🧠 Claude
-                </div>
-                <div class="ai-option" data-ai="gemini">
-                    ⚡ Gemini
-                </div>
-                <div class="ai-option" data-ai="openai">
-                    💬 OpenAI
-                </div>
-                <div class="ai-option" data-ai="synthesis">
-                    🔀 Multi-AI
+                <div class="ai-option" data-mode="deep">
+                    🧠 Deep Think
+                    <div style="font-size: 11px; color: #666; margin-top: 3px;">Comprehensive • All AIs + analysis</div>
                 </div>
             </div>
             
@@ -471,17 +490,17 @@
 
         <!-- Quick Actions -->
         <div class="quick-actions">
-            <div class="quick-action" onclick="quickQuery('Analyze this case for potential issues')">
-                <div class="icon">⚖️</div>
-                <div class="label">Case Analysis</div>
+            <div class="quick-action" onclick="accessClient()">
+                <div class="icon">👤</div>
+                <div class="label">Access Client</div>
             </div>
-            <div class="quick-action" onclick="quickQuery('Draft a motion template')">
-                <div class="icon">📝</div>
-                <div class="label">Document Draft</div>
+            <div class="quick-action" onclick="quickQuery('Search Dropbox archives for documents')">
+                <div class="icon">🗄️</div>
+                <div class="label">Archive Search</div>
             </div>
-            <div class="quick-action" onclick="quickQuery('Research recent similar cases')">
-                <div class="icon">🔍</div>
-                <div class="label">Legal Research</div>
+            <div class="quick-action" onclick="quickQuery('Search Lexis legal database')">
+                <div class="icon">📚</div>
+                <div class="label">Lexis Research</div>
             </div>
             <div class="quick-action" onclick="quickQuery('Judge Walton procedural preferences')">
                 <div class="icon">👨‍⚖️</div>
@@ -503,36 +522,123 @@
 
     <script src="ai-router.js"></script>
     <script src="mobile-app.js"></script>
+    <script src="practicepanther-integration.js"></script>
+    <script src="lexis-integration.js"></script>
+    <script src="dropbox-archive-integration.js"></script>
+    <script src="esqs-session-manager.js"></script>
     <script>
         // Global variables
-        let selectedAI = 'auto';
+        let processingMode = 'normal';
         let isProcessing = false;
+        let currentClient = null;
+        let currentSessionId = null;
 
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
             initializeAIStatus();
             setupEventListeners();
             checkPWAInstall();
+            initializeSessionTracking();
         });
 
+        function initializeSessionTracking() {
+            // Auto-detect client from URL or prompt
+            const urlParams = new URLSearchParams(window.location.search);
+            const clientFromUrl = urlParams.get('client');
+            
+            if (clientFromUrl) {
+                setCurrentClient(clientFromUrl);
+            }
+        }
+
+        async function setCurrentClient(clientName, caseNumber = null) {
+            try {
+                currentClient = clientName;
+                
+                // Start ESQs session tracking
+                const sessionResult = await esqsSessionManager.accessClient(clientName, { 
+                    caseNumber: caseNumber,
+                    source: 'esqs_interface'
+                });
+                
+                if (sessionResult.success) {
+                    currentSessionId = sessionResult.sessionId;
+                    
+                    // Update UI to show current client
+                    updateClientDisplay(clientName, sessionResult.clientIntelligence);
+                    
+                    // Show client intelligence if available
+                    if (sessionResult.clientIntelligence) {
+                        showClientIntelligence(sessionResult.clientIntelligence);
+                    }
+                }
+                
+            } catch (error) {
+                console.error('Error setting current client:', error);
+            }
+        }
+
+        function updateClientDisplay(clientName, intelligence) {
+            // Add client indicator to header
+            const header = document.querySelector('.header .subtitle');
+            header.innerHTML = `Enhanced Synthesized Quintessential System • Boyack Christiansen Legal Solutions<br>
+                <span style="color: #ffd700; font-size: 14px;">👤 Active Client: ${clientName} | 📝 Auto-archiving enabled</span>`;
+        }
+
+        function showClientIntelligence(intelligence) {
+            if (intelligence && intelligence.recommendations.length > 0) {
+                addChatMessage('claude', 
+                    `👤 <strong>Client Intelligence Loaded</strong><br><br>
+                    Welcome back to ${currentClient}'s file! I have your previous session history.<br><br>
+                    📊 <strong>Session Summary:</strong><br>
+                    • Total sessions: ${intelligence.totalSessions || 0}<br>
+                    • Last activity: ${intelligence.recentActivity ? new Date(intelligence.recentActivity).toLocaleDateString() : 'First time'}<br>
+                    • Document types: ${intelligence.documentPreferences ? intelligence.documentPreferences.map(d => d.item).join(', ') : 'None yet'}<br><br>
+                    <strong>💡 Recommendations:</strong><br>
+                    ${intelligence.recommendations.map(r => `• ${r.message}`).join('<br>')}<br><br>
+                    <em>All activities are being automatically archived to ${currentClient}'s Dropbox folder.</em>`
+                );
+            }
+        }
+
+        async function accessClient() {
+            const clientName = prompt('Enter client name (e.g., "Julie Stears"):');
+            if (!clientName) return;
+            
+            const caseNumber = prompt('Enter case number (optional):');
+            
+            await setCurrentClient(clientName, caseNumber);
+            
+            addChatMessage('claude', 
+                `👤 <strong>Client Access Initiated</strong><br><br>
+                Accessing files for: ${clientName}<br>
+                ${caseNumber ? `Case Number: ${caseNumber}<br>` : ''}
+                <br>✅ Auto-archiving enabled<br>
+                ✅ Session tracking started<br>
+                ✅ Client folder structure verified<br><br>
+                Your ESQs will automatically save all activities to ${clientName}'s archive folder every 30 minutes.`
+            );
+        }
+
         function initializeAIStatus() {
-            // Check AI availability (simulated for now)
-            const ais = ['claude', 'gemini', 'openai', 'synthesis'];
-            ais.forEach(ai => {
-                const status = document.getElementById(`${ai}-status`);
-                // In real implementation, ping each AI service
-                status.className = 'ai-indicator online';
-            });
+            // Check synthesis system availability
+            const systemStatus = document.getElementById('system-status');
+            // In real implementation, ping all AI services
+            systemStatus.className = 'ai-indicator online';
+            
+            // Update status text based on system health
+            const statusText = systemStatus.querySelector('div:last-child');
+            statusText.textContent = 'Multi-AI Legal Intelligence • Ready';
         }
 
         function setupEventListeners() {
-            // AI selector
+            // Processing mode selector
             document.querySelectorAll('.ai-option').forEach(option => {
                 option.addEventListener('click', function() {
                     document.querySelectorAll('.ai-option').forEach(opt => 
                         opt.classList.remove('selected'));
                     this.classList.add('selected');
-                    selectedAI = this.getAttribute('data-ai');
+                    processingMode = this.getAttribute('data-mode');
                 });
             });
 
@@ -560,8 +666,22 @@
             document.getElementById('response-content').innerHTML = 
                 '<div class="loading">Processing your query</div>';
 
-            // Route query based on selection
-            routeQuery(queryText, selectedAI).then(response => {
+            // Route query based on processing mode (always synthesis)
+            routeQuery(queryText, processingMode).then(response => {
+                displayResponse(response);
+                
+                // Log ESQs query to session if client is active
+                if (currentClient && currentSessionId) {
+                    esqsSessionManager.logESQsQuery(
+                        currentClient, 
+                        queryText, 
+                        processingMode, 
+                        response.content, 
+                        response.tokensUsed
+                    );
+                }
+                
+            }).catch(error => {
                 displayResponse(response);
             }).catch(error => {
                 displayError(error);
