@@ -1,4 +1,62 @@
 /**
+     * Start billing timer for client session
+     */
+    async startBillingForClient(sessionId, clientName, attorney = 'John W Adams III', caseNumber = null) {
+        try {
+            const billingResult = await esqsBillingTimer.startBillingTimer(clientName, sessionId, attorney, caseNumber);
+            
+            if (billingResult.success) {
+                const session = this.activeClientSessions.get(sessionId);
+                if (session) {
+                    session.billingActive = true;
+                    session.billingStartTime = billingResult.startTime;
+                    session.attorney = attorney;
+                    session.billingRate = billingResult.billingRate;
+                    session.caseNumber = caseNumber;
+                }
+                
+                console.log(`💰 Billing started for ${clientName} - ${attorney} @ ${billingResult.billingRate}/hr`);
+            }
+            
+            return billingResult;
+            
+        } catch (error) {
+            console.error('Error starting billing:', error);
+            return { success: false, error: error.message };
+        }
+    }
+
+    /**
+     * Log billable activity automatically
+     */
+    async logBillableActivity(sessionId, activityType, description, complexity = 'moderate', esqsAssisted = false) {
+        try {
+            const session = this.activeClientSessions.get(sessionId);
+            if (!session || !session.billingActive) return;
+
+            // Log to billing timer
+            await esqsBillingTimer.logBillableActivity(sessionId, {
+                type: activityType,
+                description: description,
+                complexity: complexity,
+                esqsAssisted: esqsAssisted,
+                details: { sessionId, client: session.clientName }
+            });
+
+            // Also log to session
+            await this.logActivity(sessionId, {
+                type: activityType,
+                description: description,
+                context: { billable: true, complexity, esqsAssisted }
+            });
+
+            return true;
+
+        } catch (error) {
+            console.error('Error logging billable activity:', error);
+            return false;
+        }
+    }/**
  * ESQs Session Manager - Automatic Client Session Tracking & Archiving
  * Handles automatic session logging, client folder management, and scheduled archiving
  */
@@ -60,6 +118,9 @@ class ESQsSessionManager {
             if (!sessionId) {
                 // Create new session
                 sessionId = await this.startClientSession(clientName, context);
+                
+                // Start billing timer
+                await this.startBillingForClient(sessionId, clientName, context.attorney, context.caseNumber);
             }
 
             // Ensure client folder exists in Dropbox
@@ -80,7 +141,8 @@ class ESQsSessionManager {
                 sessionId: sessionId,
                 clientName: clientName,
                 clientIntelligence: clientIntelligence,
-                message: 'Client session active with auto-archiving'
+                billingActive: true,
+                message: 'Client session active with auto-archiving and billing'
             };
 
         } catch (error) {
@@ -515,6 +577,18 @@ session.esqsQueries.map(query => `
                 data: { query, processingMode, response: response.substring(0, 100), tokensUsed },
                 esqsAnalysis: `Processed in ${processingMode} mode, ${tokensUsed} tokens used`
             });
+
+            // Determine billable activity type based on query content
+            const activityType = this.categorizeQueryForBilling(query);
+            const complexity = processingMode === 'deep' ? 'complex' : 'moderate';
+            
+            await this.logBillableActivity(
+                sessionId,
+                activityType,
+                `Legal analysis: ${query.substring(0, 100)}...`,
+                complexity,
+                true // ESQs assisted
+            );
         }
     }
 
@@ -527,6 +601,18 @@ session.esqsQueries.map(query => `
                 description: `${action === 'edit' ? 'Edited' : 'Viewed'} document: ${fileName}`,
                 data: { fileName, fileType, action }
             });
+
+            // Log billable activity
+            const activityType = action === 'edit' ? 'document_drafting' : 'document_review';
+            const complexity = this.assessDocumentComplexity(fileName, fileType);
+            
+            await this.logBillableActivity(
+                sessionId,
+                activityType,
+                `${action === 'edit' ? 'Document editing' : 'Document review'}: ${fileName}`,
+                complexity,
+                false // Not ESQs assisted for direct document work
+            );
         }
     }
 
@@ -539,23 +625,172 @@ session.esqsQueries.map(query => `
                 description: `Searched for: ${query}`,
                 data: { query, results: resultsCount }
             });
+
+            // Log as legal research if it's a legal search
+            if (this.isLegalResearch(query)) {
+                await this.logBillableActivity(
+                    sessionId,
+                    'legal_research',
+                    `Legal research: ${query}`,
+                    'moderate',
+                    true // ESQs assisted search
+                );
+            }
         }
     }
 
     // Get session status
-    getSessionStatus(clientName) {
-        const sessionId = this.findActiveClientSession(clientName);
-        if (sessionId) {
-            const session = this.activeClientSessions.get(sessionId);
-            return {
-                active: true,
-                sessionId: sessionId,
-                startTime: session.startTime,
-                activitiesCount: session.activities.length,
-                autoSaveCount: session.autoSaveCount
-            };
+    /**
+     * Utility methods for billing categorization
+     */
+    categorizeQueryForBilling(query) {
+        const lowerQuery = query.toLowerCase();
+        
+        if (lowerQuery.includes('draft') || lowerQuery.includes('write') || lowerQuery.includes('compose')) {
+            return 'document_drafting';
         }
-        return { active: false };
+        
+        if (lowerQuery.includes('research') || lowerQuery.includes('case law') || lowerQuery.includes('statute')) {
+            return 'legal_research';
+        }
+        
+        if (lowerQuery.includes('analyze') || lowerQuery.includes('review') || lowerQuery.includes('evaluate')) {
+            return 'case_analysis';
+        }
+        
+        if (lowerQuery.includes('court') || lowerQuery.includes('hearing') || lowerQuery.includes('trial')) {
+            return 'court_preparation';
+        }
+        
+        if (lowerQuery.includes('client') || lowerQuery.includes('communication') || lowerQuery.includes('email')) {
+            return 'client_communication';
+        }
+        
+        return 'case_analysis'; // Default
+    }
+
+    assessDocumentComplexity(fileName, fileType) {
+        const name = fileName.toLowerCase();
+        
+        if (name.includes('motion') || name.includes('pleading') || name.includes('brief')) {
+            return 'complex';
+        }
+        
+        if (name.includes('contract') || name.includes('agreement')) {
+            return 'moderate';
+        }
+        
+        if (name.includes('letter') || name.includes('email')) {
+            return 'simple';
+        }
+        
+        if (name.includes('discovery') || name.includes('interrogator')) {
+            return 'litigation';
+        }
+        
+        return 'moderate'; // Default
+    }
+
+    isLegalResearch(query) {
+        const legalTerms = [
+            'case law', 'statute', 'regulation', 'precedent', 'court', 'judge',
+            'legal', 'law', 'rule', 'motion', 'pleading', 'brief', 'contract'
+        ];
+        
+        const lowerQuery = query.toLowerCase();
+        return legalTerms.some(term => lowerQuery.includes(term));
+    }
+
+    /**
+     * End client session and generate billing summary
+     */
+    async endClientSession(sessionId) {
+        try {
+            const session = this.activeClientSessions.get(sessionId);
+            if (!session) {
+                throw new Error('Session not found');
+            }
+
+            // Stop billing timer and get summary
+            let billingSummary = null;
+            if (session.billingActive) {
+                const billingResult = await esqsBillingTimer.stopTimer(sessionId);
+                if (billingResult.success) {
+                    billingSummary = billingResult.summary;
+                }
+            }
+
+            // Final session archive
+            await this.createFinalSessionArchive(session, billingSummary);
+
+            // Clean up
+            this.activeClientSessions.delete(sessionId);
+
+            return {
+                success: true,
+                sessionId: sessionId,
+                clientName: session.clientName,
+                billingSummary: billingSummary,
+                message: 'Session ended with billing summary generated'
+            };
+
+        } catch (error) {
+            console.error('Error ending client session:', error);
+            throw new Error(`Failed to end session: ${error.message}`);
+        }
+    }
+
+    async createFinalSessionArchive(session, billingSummary) {
+        const finalArchive = this.generateFinalSessionSummary(session, billingSummary);
+        
+        await this.saveToClientArchive(
+            session.clientName,
+            `final_session_${session.sessionId}.md`,
+            finalArchive
+        );
+    }
+
+    generateFinalSessionSummary(session, billingSummary) {
+        const sessionSummary = this.generateDetailedSessionSummary(session);
+        
+        if (!billingSummary) {
+            return sessionSummary;
+        }
+
+        return `${sessionSummary}
+
+---
+
+## 💰 BILLING SUMMARY
+
+### Time Analysis
+- **Actual Time:** ${billingSummary.timeAnalysis.actualTime.toFixed(2)} hours
+- **Reasonable Time:** ${billingSummary.timeAnalysis.reasonableTime.toFixed(2)} hours  
+- **Recommended Billing:** ${billingSummary.timeAnalysis.recommendedTime.toFixed(2)} hours
+- **Rounded Billing:** ${billingSummary.timeAnalysis.roundedTime.toFixed(2)} hours
+
+### Financial Summary
+- **Hourly Rate:** ${billingSummary.financialAnalysis.hourlyRate}
+- **Recommended Amount:** ${billingSummary.financialAnalysis.recommendedAmount.toFixed(2)}
+- **Ethical Compliance:** ${billingSummary.financialAnalysis.ethicalCompliance ? '✅ Compliant' : '⚠️ Review Required'}
+
+### Activity Breakdown
+${billingSummary.activityBreakdown.map(activity => `
+**${activity.description}**
+- Actual: ${activity.actualTime.toFixed(2)}h | Reasonable: ${activity.reasonableTime.toFixed(2)}h
+- Complexity: ${activity.complexity} | ESQs Assisted: ${activity.esqsAssisted ? 'Yes' : 'No'}
+- Reasoning: ${activity.reasoning}
+`).join('\n')}
+
+### Billing Recommendations
+${billingSummary.recommendations.map(rec => `- **${rec.type}:** ${rec.message}`).join('\n')}
+
+### Ethical Notes
+${billingSummary.ethicalNotes.map(note => `- ${note}`).join('\n')}
+
+---
+**Ready for attorney review and time entry creation**
+`;
     }
 }
 
