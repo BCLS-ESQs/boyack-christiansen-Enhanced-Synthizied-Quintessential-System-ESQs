@@ -1,4 +1,30 @@
-if (message.includes('dropbox') || message.includes('archive') || message.includes('files')) {
+async function accessClient() {
+            const clientName = prompt('Enter client name (e.g., "Julie Stears"):');
+            if (!clientName) return;
+            
+            const caseNumber = prompt('Enter case number (optional):');
+            const attorney = prompt('Enter attorney name:', 'John W Adams III');
+            
+            await setCurrentClient(clientName, caseNumber, attorney);
+            
+            addChatMessage('claude', 
+                `👤 <strong>Client Access Initiated</strong><br><br>
+                Accessing files for: ${clientName}<br>
+                ${caseNumber ? `Case Number: ${caseNumber}<br>` : ''}
+                Attorney: ${attorney}<br><br>
+                ✅ Auto-archiving enabled<br>
+                ✅ Session tracking started<br>
+                ✅ Billing timer activated<br>
+                ✅ Client folder structure verified<br><br>
+                💰 <strong>Billing Information:</strong><br>
+                • Timer starts at 12:01 PM daily<br>
+                • Auto-pauses after 15 min inactivity<br>
+                • Tracks reasonable billing time vs actual time<br>
+                • Ethical 1.5x maximum enforced<br>
+                • ESQs assistance tracked for efficiency<br><br>
+                Your ESQs will automatically save all activities to ${clientName}'s archive folder every 30 minutes.`
+            );
+        }            if (message.includes('dropbox') || message.includes('archive') || message.includes('files')) {
                 // Log search activity if client is active
                 if (currentClient) {
                     esqsSessionManager.logSearch(currentClient, userMessage, 0);
@@ -494,17 +520,17 @@ if (message.includes('dropbox') || message.includes('archive') || message.includ
                 <div class="icon">👤</div>
                 <div class="label">Access Client</div>
             </div>
-            <div class="quick-action" onclick="quickQuery('Search Dropbox archives for documents')">
-                <div class="icon">🗄️</div>
-                <div class="label">Archive Search</div>
+            <div class="quick-action" onclick="showBillingSummary()">
+                <div class="icon">💰</div>
+                <div class="label">Billing Summary</div>
             </div>
             <div class="quick-action" onclick="quickQuery('Search Lexis legal database')">
                 <div class="icon">📚</div>
                 <div class="label">Lexis Research</div>
             </div>
-            <div class="quick-action" onclick="quickQuery('Judge Walton procedural preferences')">
-                <div class="icon">👨‍⚖️</div>
-                <div class="label">Judge Intel</div>
+            <div class="quick-action" onclick="endCurrentSession()">
+                <div class="icon">⏹️</div>
+                <div class="label">End Session</div>
             </div>
         </div>
 
@@ -526,6 +552,7 @@ if (message.includes('dropbox') || message.includes('archive') || message.includ
     <script src="lexis-integration.js"></script>
     <script src="dropbox-archive-integration.js"></script>
     <script src="esqs-session-manager.js"></script>
+    <script src="esqs-billing-timer.js"></script>
     <script>
         // Global variables
         let processingMode = 'normal';
@@ -551,13 +578,14 @@ if (message.includes('dropbox') || message.includes('archive') || message.includ
             }
         }
 
-        async function setCurrentClient(clientName, caseNumber = null) {
+        async function setCurrentClient(clientName, caseNumber = null, attorney = 'John W Adams III') {
             try {
                 currentClient = clientName;
                 
                 // Start ESQs session tracking
                 const sessionResult = await esqsSessionManager.accessClient(clientName, { 
                     caseNumber: caseNumber,
+                    attorney: attorney,
                     source: 'esqs_interface'
                 });
                 
@@ -579,10 +607,39 @@ if (message.includes('dropbox') || message.includes('archive') || message.includ
         }
 
         function updateClientDisplay(clientName, intelligence) {
+            const billingStatus = esqsBillingTimer.getTimerStatus(currentSessionId);
+            const billingText = billingStatus.active ? 
+                `⏱️ Billing: ${formatElapsedTime(billingStatus.elapsedTime)} | ` : '';
+            
             // Add client indicator to header
             const header = document.querySelector('.header .subtitle');
             header.innerHTML = `Enhanced Synthesized Quintessential System • Boyack Christiansen Legal Solutions<br>
-                <span style="color: #ffd700; font-size: 14px;">👤 Active Client: ${clientName} | 📝 Auto-archiving enabled</span>`;
+                <span style="color: #ffd700; font-size: 14px;">👤 Active Client: ${clientName} | ${billingText}📝 Auto-archiving enabled</span>`;
+                
+            // Update billing display every minute
+            if (billingStatus.active && !window.billingUpdateInterval) {
+                window.billingUpdateInterval = setInterval(() => {
+                    updateBillingDisplay();
+                }, 60000); // Update every minute
+            }
+        }
+
+        function updateBillingDisplay() {
+            if (!currentSessionId) return;
+            
+            const billingStatus = esqsBillingTimer.getTimerStatus(currentSessionId);
+            if (billingStatus.active) {
+                const header = document.querySelector('.header .subtitle');
+                const billingText = `⏱️ Billing: ${formatElapsedTime(billingStatus.elapsedTime)} | `;
+                header.innerHTML = header.innerHTML.replace(/⏱️ Billing: [^|]+ \| /, billingText);
+            }
+        }
+
+        function formatElapsedTime(milliseconds) {
+            const totalMinutes = Math.floor(milliseconds / (1000 * 60));
+            const hours = Math.floor(totalMinutes / 60);
+            const minutes = totalMinutes % 60;
+            return `${hours}:${minutes.toString().padStart(2, '0')}`;
         }
 
         function showClientIntelligence(intelligence) {
@@ -601,23 +658,94 @@ if (message.includes('dropbox') || message.includes('archive') || message.includ
             }
         }
 
-        async function accessClient() {
-            const clientName = prompt('Enter client name (e.g., "Julie Stears"):');
-            if (!clientName) return;
+        async function showBillingSummary() {
+            if (!currentSessionId) {
+                addChatMessage('claude', '⚠️ No active billing session. Please access a client first.');
+                return;
+            }
             
-            const caseNumber = prompt('Enter case number (optional):');
+            const billingStatus = esqsBillingTimer.getTimerStatus(currentSessionId);
             
-            await setCurrentClient(clientName, caseNumber);
+            if (billingStatus.active) {
+                const elapsed = formatElapsedTime(billingStatus.elapsedTime);
+                addChatMessage('claude', 
+                    `💰 <strong>Current Billing Session</strong><br><br>
+                    👤 <strong>Client:</strong> ${billingStatus.clientName}<br>
+                    ⚖️ <strong>Attorney:</strong> ${billingStatus.attorney}<br>
+                    ⏱️ <strong>Elapsed Time:</strong> ${elapsed}<br>
+                    📝 <strong>Activities Logged:</strong> ${billingStatus.activitiesCount}<br>
+                    📊 <strong>Current Activity:</strong> ${billingStatus.currentActivity || 'General work'}<br>
+                    ${billingStatus.isPaused ? '⏸️ <strong>Status:</strong> Paused (inactivity)' : '▶️ <strong>Status:</strong> Active'}<br><br>
+                    💡 <strong>Billing starts at 12:01 PM daily</strong><br>
+                    ⚠️ <strong>Auto-pauses after 15 min inactivity</strong><br>
+                    📋 <strong>ESQs tracks reasonable billing time automatically</strong><br><br>
+                    Use "End Session" to generate final billing summary.`
+                );
+            } else {
+                addChatMessage('claude', '⏱️ No active billing timer. The timer will start at 12:01 PM when you access a client.');
+            }
+        }
+
+        async function endCurrentSession() {
+            if (!currentClient || !currentSessionId) {
+                addChatMessage('claude', '⚠️ No active session to end.');
+                return;
+            }
             
-            addChatMessage('claude', 
-                `👤 <strong>Client Access Initiated</strong><br><br>
-                Accessing files for: ${clientName}<br>
-                ${caseNumber ? `Case Number: ${caseNumber}<br>` : ''}
-                <br>✅ Auto-archiving enabled<br>
-                ✅ Session tracking started<br>
-                ✅ Client folder structure verified<br><br>
-                Your ESQs will automatically save all activities to ${clientName}'s archive folder every 30 minutes.`
-            );
+            const confirmEnd = confirm(`End session for ${currentClient}? This will generate the billing summary.`);
+            if (!confirmEnd) return;
+            
+            try {
+                const result = await esqsSessionManager.endClientSession(currentSessionId);
+                
+                if (result.success && result.billingSummary) {
+                    const summary = result.billingSummary;
+                    const customHours = prompt(
+                        `Recommended billing: ${summary.timeAnalysis.recommendedTime.toFixed(2)} hours\n` +
+                        `Ethical maximum: ${summary.timeAnalysis.ethicalMaxTime.toFixed(2)} hours\n\n` +
+                        `Enter custom hours to bill (or press OK for recommended):`,
+                        summary.timeAnalysis.roundedTime.toFixed(2)
+                    );
+                    
+                    if (customHours !== null) {
+                        const hoursToUse = parseFloat(customHours) || summary.timeAnalysis.roundedTime;
+                        const amount = hoursToUse * summary.financialAnalysis.hourlyRate;
+                        
+                        addChatMessage('claude', 
+                            `⏹️ <strong>Session Ended - Billing Summary</strong><br><br>
+                            👤 <strong>Client:</strong> ${summary.clientName}<br>
+                            ⚖️ <strong>Attorney:</strong> ${summary.attorney}<br>
+                            ⏱️ <strong>Actual Time:</strong> ${summary.timeAnalysis.actualTime.toFixed(2)} hours<br>
+                            💡 <strong>ESQs Recommended:</strong> ${summary.timeAnalysis.recommendedTime.toFixed(2)} hours<br>
+                            📋 <strong>Billing Hours:</strong> ${hoursToUse.toFixed(2)} hours<br>
+                            💰 <strong>Amount:</strong> ${amount.toFixed(2)}<br><br>
+                            <strong>📊 Activity Summary:</strong><br>
+                            ${summary.activityBreakdown.slice(0, 3).map(activity => 
+                                `• ${activity.description}: ${activity.reasonableTime.toFixed(1)}h (${activity.complexity})`
+                            ).join('<br>')}<br><br>
+                            ✅ <strong>Ethics Check:</strong> ${hoursToUse <= summary.timeAnalysis.ethicalMaxTime ? 'Compliant' : 'Review Required'}<br>
+                            📝 <strong>Ready for Practice Panther time entry</strong>`
+                        );
+                    }
+                }
+                
+                // Clear current client
+                currentClient = null;
+                currentSessionId = null;
+                
+                // Clear billing update interval
+                if (window.billingUpdateInterval) {
+                    clearInterval(window.billingUpdateInterval);
+                    window.billingUpdateInterval = null;
+                }
+                
+                // Update header
+                const header = document.querySelector('.header .subtitle');
+                header.innerHTML = 'Enhanced Synthesized Quintessential System • Boyack Christiansen Legal Solutions';
+                
+            } catch (error) {
+                addChatMessage('claude', `❌ Error ending session: ${error.message}`);
+            }
         }
 
         function initializeAIStatus() {
