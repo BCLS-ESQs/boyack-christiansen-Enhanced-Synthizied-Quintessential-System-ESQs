@@ -1,1 +1,209 @@
-
+{
+  "name": "AI RAID - Boyack Christiansen Legal",
+  "short_name": "AI RAID",
+  "description": "Multi-AI Legal Intelligence System with Token Conservation for Boyack Christiansen Legal Solutions",
+  "version": "1.0.0",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "theme_color": "#1a73e8",
+  "background_color": "#ffffff",
+  "lang": "en-US",
+  
+  "icons": [
+    {
+      "src": "/icons/icon-72x72.png",
+      "sizes": "72x72",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-96x96.png",
+      "sizes": "96x96",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-128x128.png",
+      "sizes": "128x128",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-144x144.png",
+      "sizes": "144x144",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-152x152.png",
+      "sizes": "152x152",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-384x384.png",
+      "sizes": "384x384",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable any"
+    }
+  ],
+  
+  "categories": [
+    "business",
+    "productivity",
+    "utilities"
+  ],
+  
+  "shortcuts": [
+    {
+      "name": "New Case Analysis",
+      "short_name": "Case Analysis",
+      "description": "Start a new legal case analysis",
+      "url": "/?action=case-analysis",
+      "icons": [
+        {
+          "src": "/icons/shortcut-case.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "Document Generator",
+      "short_name": "Documents",
+      "description": "Generate legal documents",
+      "url": "/?action=document-generator",
+      "icons": [
+        {
+          "src": "/icons/shortcut-document.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "Judge Intelligence",
+      "short_name": "Judge Intel",
+      "description": "Access judicial intelligence data",
+      "url": "/?action=judge-intelligence",
+      "icons": [
+        {
+          "src": "/icons/shortcut-judge.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "Quick Research",
+      "short_name": "Research",
+      "description": "Perform quick legal research",
+      "url": "/?action=research",
+      "icons": [
+        {
+          "src": "/icons/shortcut-research.png",
+          "sizes": "96x96"
+        }
+      ]
+    }
+  ],
+  
+  "related_applications": [
+    {
+      "platform": "web",
+      "url": "https://saintgeorgelaw.com"
+    }
+  ],
+  
+  "prefer_related_applications": false,
+  
+  "features": [
+    "Cross Platform",
+    "fast",
+    "simple"
+  ],
+  
+  "screenshots": [
+    {
+      "src": "/screenshots/desktop-home.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "platform": "wide",
+      "label": "AI RAID Desktop Interface"
+    },
+    {
+      "src": "/screenshots/mobile-home.png",
+      "sizes": "390x844",
+      "type": "image/png",
+      "platform": "narrow",
+      "label": "AI RAID Mobile Interface"
+    }
+  ],
+  
+  "protocol_handlers": [
+    {
+      "protocol": "web+airaid",
+      "url": "/?query=%s"
+    }
+  ],
+  
+  "file_handlers": [
+    {
+      "action": "/?file-handler",
+      "accept": {
+        "application/pdf": [".pdf"],
+        "text/plain": [".txt"],
+        "application/msword": [".doc"],
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document": [".docx"]
+      }
+    }
+  ],
+  
+  "share_target": {
+    "action": "/?share-target",
+    "method": "POST",
+    "enctype": "multipart/form-data",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url",
+      "files": [
+        {
+          "name": "files",
+          "accept": [
+            "application/pdf",
+            "text/plain",
+            "application/msword",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+          ]
+        }
+      ]
+    }
+  },
+  
+  "launch_handler": {
+    "client_mode": "auto"
+  },
+  
+  "edge_side_panel": {
+    "preferred_width": 400
+  },
+  
+  "display_override": [
+    "window-controls-overlay",
+    "standalone",
+    "minimal-ui",
+    "browser"
+  ]
+}
