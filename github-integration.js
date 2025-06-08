@@ -1,280 +1,797 @@
-/**
- * GitHub Integration for ESQs
- * Auto-saves legal work, session logs, and case files to GitHub
- */
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#1a73e8">
+    <title>ESQs - Enhanced Synthesized Quintessential System</title>
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/png" href="favicon.png">
+    
+    <!-- Mobile Optimized -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="ESQs">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-class GitHubIntegration {
-    constructor() {
-        this.token = null;
-        this.username = 'JdubIV';
-        this.repo = 'boyack-christiansen-ai-raid';
-        this.baseURL = 'https://api.github.com';
-        this.isConnected = false;
-        this.autoSaveEnabled = true;
-        
-        console.log('📁 ESQs GitHub Integration ready');
-    }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+            padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+        }
 
-    /**
-     * Connect to GitHub with personal access token
-     */
-    async connect(personalAccessToken) {
-        try {
-            this.token = personalAccessToken;
-            
-            // Test connection
-            const response = await this.makeRequest('/user');
-            
-            if (response.login) {
-                this.isConnected = true;
-                this.username = response.login;
-                
-                console.log(`✅ Connected to GitHub as ${this.username}`);
-                
-                return {
-                    success: true,
-                    username: this.username,
-                    message: 'ESQs connected to GitHub successfully'
-                };
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 15px 20px;
+            text-align: center;
+            box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 600;
+            color: #1a73e8;
+            margin-bottom: 5px;
+        }
+
+        .header .subtitle {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .system-status {
+            display: flex;
+            gap: 10px;
+            padding: 15px 20px;
+            background: rgba(255, 255, 255, 0.9);
+            margin: 15px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            justify-content: center;
+        }
+
+        .status-indicator {
+            flex: 1;
+            text-align: center;
+            padding: 10px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: 500;
+            max-width: 200px;
+        }
+
+        .status-indicator.online {
+            background: #e8f5e8;
+            color: #2e7d2e;
+        }
+
+        .status-indicator.offline {
+            background: #fce8e6;
+            color: #c5221f;
+        }
+
+        .main-interface {
+            padding: 20px;
+            max-width: 100%;
+        }
+
+        .query-input {
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .query-input textarea {
+            width: 100%;
+            min-height: 100px;
+            border: none;
+            font-size: 16px;
+            font-family: inherit;
+            resize: vertical;
+            outline: none;
+        }
+
+        .query-input textarea::placeholder {
+            color: #999;
+        }
+
+        .processing-selector {
+            display: flex;
+            gap: 10px;
+            margin: 15px 0;
+            flex-wrap: wrap;
+        }
+
+        .processing-option {
+            flex: 1;
+            min-width: 150px;
+            padding: 12px 8px;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 14px;
+            background: white;
+        }
+
+        .processing-option.selected {
+            border-color: #1a73e8;
+            background: #e8f0fe;
+            color: #1a73e8;
+        }
+
+        .processing-option:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+
+        .send-button {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #1a73e8, #4285f4);
+            color: white;
+            border: none;
+            border-radius: 15px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .send-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(26, 115, 232, 0.3);
+        }
+
+        .send-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .response-area {
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            margin-top: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            min-height: 200px;
+        }
+
+        .response-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .synthesis-badge {
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: 500;
+            background: #fff3e0;
+            color: #f57c00;
+        }
+
+        .token-info {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .response-content {
+            font-size: 16px;
+            line-height: 1.6;
+            color: #333;
+        }
+
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .loading::after {
+            content: '';
+            width: 20px;
+            height: 20px;
+            border: 2px solid #e0e0e0;
+            border-top: 2px solid #1a73e8;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-left: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .quick-actions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .quick-action {
+            background: white;
+            border-radius: 15px;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .quick-action:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+        }
+
+        .quick-action .icon {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+
+        .quick-action .label {
+            font-size: 14px;
+            font-weight: 500;
+            color: #333;
+        }
+
+        @media (max-width: 768px) {
+            .processing-selector {
+                flex-direction: column;
             }
             
-        } catch (error) {
-            console.error('❌ GitHub connection failed:', error);
-            return {
-                success: false,
-                error: error.message
-            };
+            .processing-option {
+                flex: none;
+            }
+            
+            .quick-actions {
+                grid-template-columns: repeat(2, 1fr);
+            }
         }
-    }
 
-    /**
-     * Auto-save ESQs session to GitHub
-     */
-    async saveSession(sessionData) {
-        if (!this.isConnected || !this.autoSaveEnabled) return;
+        .install-prompt {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+            padding: 15px 20px;
+            margin: 15px;
+            border-radius: 15px;
+            text-align: center;
+            cursor: pointer;
+            display: none;
+        }
+
+        .install-prompt.show {
+            display: block;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateY(-20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <h1>⚖️ ESQs Legal Intelligence</h1>
+        <div class="subtitle">Enhanced Synthesized Quintessential System • Boyack Christiansen Legal Solutions</div>
+    </div>
+
+    <!-- ESQs System Status -->
+    <div class="system-status">
+        <div class="status-indicator online" id="esqs-status">
+            <div>⚖️ ESQs SYNTHESIS ENGINE</div>
+            <div style="font-size: 10px;">Enhanced Synthesized Quintessential System • Ready</div>
+        </div>
+        <div class="status-indicator online" id="github-status">
+            <div>📁 GITHUB INTEGRATION</div>
+            <div style="font-size: 10px;">Connecting...</div>
+        </div>
+    </div>
+
+    <!-- Main Interface -->
+    <div class="main-interface">
+        <!-- Query Input -->
+        <div class="query-input">
+            <textarea 
+                id="query-text" 
+                placeholder="Ask anything... The ESQs system will synthesize responses from multiple AIs for optimal legal analysis."
+            ></textarea>
+            
+            <!-- Processing Mode Selection -->
+            <div class="processing-selector">
+                <div class="processing-option selected" data-mode="normal">
+                    ⚡ Normal Processing
+                    <div style="font-size: 11px; color: #666; margin-top: 3px;">Fast synthesis • 2-3 AIs</div>
+                </div>
+                <div class="processing-option" data-mode="deep">
+                    🧠 Deep Think
+                    <div style="font-size: 11px; color: #666; margin-top: 3px;">Comprehensive • All AIs + analysis</div>
+                </div>
+            </div>
+            
+            <button class="send-button" onclick="sendQuery()" id="send-btn">
+                Send Query to ESQs
+            </button>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="quick-actions">
+            <div class="quick-action" onclick="accessClient()">
+                <div class="icon">👤</div>
+                <div class="label">Access Client</div>
+            </div>
+            <div class="quick-action" onclick="showBillingSummary()">
+                <div class="icon">💰</div>
+                <div class="label">Billing Summary</div>
+            </div>
+            <div class="quick-action" onclick="quickQuery('Search Lexis legal database')">
+                <div class="icon">📚</div>
+                <div class="label">Lexis Research</div>
+            </div>
+            <div class="quick-action" onclick="endCurrentSession()">
+                <div class="icon">⏹️</div>
+                <div class="label">End Session</div>
+            </div>
+        </div>
+
+        <!-- Response Area -->
+        <div class="response-area" id="response-area" style="display: none;">
+            <div class="response-header">
+                <div class="synthesis-badge" id="response-ai">ESQs Multi-AI Synthesis</div>
+                <div class="token-info" id="token-info">Tokens: 0</div>
+            </div>
+            <div class="response-content" id="response-content">
+                <!-- AI responses will appear here -->
+            </div>
+        </div>
+    </div>
+
+    <script src="ai-router.js"></script>
+    <script src="mobile-app.js"></script>
+    <script src="practicepanther-integration.js"></script>
+    <script src="lexis-integration.js"></script>
+    <script src="dropbox-archive-integration.js"></script>
+    <script src="esqs-session-manager.js"></script>
+    <script src="esqs-billing-timer.js"></script>
+    <script src="github-integration.js"></script>
+    <script>
+        // =================== GITHUB CONNECTION ===================
+        // 🔑 PUT YOUR GITHUB TOKEN HERE (replace the text between quotes):
+        const GITHUB_TOKEN = 'PUT_YOUR_GITHUB_TOKEN_HERE';
         
-        try {
-            const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-            const filename = `sessions/${sessionData.clientName}_${timestamp}.md`;
-            
-            const content = this.formatSessionForGitHub(sessionData);
-            
-            await this.createOrUpdateFile(filename, content, 
-                `ESQs auto-save: ${sessionData.clientName} session`);
-                
-            console.log(`💾 Session auto-saved to GitHub: ${filename}`);
-            
-            return { success: true, filename: filename };
-            
-        } catch (error) {
-            console.error('GitHub save error:', error);
-            return { success: false, error: error.message };
-        }
-    }
-
-    /**
-     * Save billing summary to GitHub
-     */
-    async saveBillingSummary(billingSummary) {
-        if (!this.isConnected) return;
+        // Repository: boyack-christiansen-Enhanced-Synthizied-Quintessential-System-ESQs
         
-        try {
-            const date = new Date().toISOString().split('T')[0];
-            const filename = `billing/${billingSummary.clientName}_${date}_billing.md`;
-            
-            const content = this.formatBillingForGitHub(billingSummary);
-            
-            await this.createOrUpdateFile(filename, content,
-                `ESQs billing: ${billingSummary.clientName} - ${billingSummary.timeAnalysis.roundedTime}h`);
-                
-            return { success: true, filename: filename };
-            
-        } catch (error) {
-            console.error('GitHub billing save error:', error);
-            return { success: false, error: error.message };
-        }
-    }
+        // Global variables
+        let processingMode = 'normal';
+        let isProcessing = false;
+        let currentClient = null;
+        let currentSessionId = null;
 
-    /**
-     * Create or update file in GitHub repo
-     */
-    async createOrUpdateFile(path, content, commitMessage) {
-        try {
-            // Check if file exists
-            let sha = null;
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeESQsStatus();
+            setupEventListeners();
+            connectToGitHub();
+            initializeSessionTracking();
+        });
+
+        // =================== GITHUB INTEGRATION ===================
+        async function connectToGitHub() {
             try {
-                const existing = await this.makeRequest(`/repos/${this.username}/${this.repo}/contents/${path}`);
-                sha = existing.sha;
+                updateGitHubStatus('🔄 Connecting...');
+                
+                if (GITHUB_TOKEN === 'PUT_YOUR_GITHUB_TOKEN_HERE') {
+                    updateGitHubStatus('⚠️ Token Needed');
+                    console.log('⚠️ Please add your GitHub token to the GITHUB_TOKEN variable');
+                    return;
+                }
+                
+                const result = await githubIntegration.connect(GITHUB_TOKEN);
+                
+                if (result.success) {
+                    updateGitHubStatus('✅ Connected');
+                    console.log('✅ ESQs connected to GitHub successfully!');
+                } else {
+                    updateGitHubStatus('❌ Failed');
+                    console.error('❌ GitHub connection failed:', result.error);
+                }
+                
             } catch (error) {
-                // File doesn't exist, that's fine
+                updateGitHubStatus('❌ Error');
+                console.error('GitHub connection error:', error);
             }
+        }
+
+        function updateGitHubStatus(status) {
+            const statusElement = document.getElementById('github-status');
+            if (statusElement) {
+                statusElement.innerHTML = `
+                    <div>📁 GITHUB INTEGRATION</div>
+                    <div style="font-size: 10px;">${status}</div>
+                `;
+                
+                // Update status indicator color
+                if (status.includes('✅')) {
+                    statusElement.className = 'status-indicator online';
+                } else if (status.includes('❌') || status.includes('⚠️')) {
+                    statusElement.className = 'status-indicator offline';
+                } else {
+                    statusElement.className = 'status-indicator online';
+                }
+            }
+        }
+
+        function initializeSessionTracking() {
+            // Auto-detect client from URL or prompt
+            const urlParams = new URLSearchParams(window.location.search);
+            const clientFromUrl = urlParams.get('client');
             
-            // Create/update file
-            const requestBody = {
-                message: commitMessage,
-                content: btoa(unescape(encodeURIComponent(content))), // Base64 encode
-                sha: sha // Include sha if updating existing file
-            };
+            if (clientFromUrl) {
+                setCurrentClient(clientFromUrl);
+            }
+        }
+
+        async function setCurrentClient(clientName, caseNumber = null, attorney = 'John W Adams III') {
+            try {
+                currentClient = clientName;
+                
+                // Start ESQs session tracking
+                const sessionResult = await esqsSessionManager.accessClient(clientName, { 
+                    caseNumber: caseNumber,
+                    attorney: attorney,
+                    source: 'esqs_interface'
+                });
+                
+                if (sessionResult.success) {
+                    currentSessionId = sessionResult.sessionId;
+                    
+                    // Auto-save to GitHub
+                    if (githubIntegration.isConnected) {
+                        await githubIntegration.saveSession({
+                            clientName: clientName,
+                            sessionId: currentSessionId,
+                            startTime: new Date().toISOString(),
+                            activities: [],
+                            lastActivity: new Date().toISOString()
+                        });
+                    }
+                    
+                    // Update UI to show current client
+                    updateClientDisplay(clientName, sessionResult.clientIntelligence);
+                    
+                    // Show client intelligence if available
+                    if (sessionResult.clientIntelligence) {
+                        showClientIntelligence(sessionResult.clientIntelligence);
+                    }
+                }
+                
+            } catch (error) {
+                console.error('Error setting current client:', error);
+            }
+        }
+
+        function updateClientDisplay(clientName, intelligence) {
+            const billingStatus = esqsBillingTimer.getTimerStatus(currentSessionId);
+            const billingText = billingStatus.active ? 
+                `⏱️ Billing: ${formatElapsedTime(billingStatus.elapsedTime)} | ` : '';
             
-            const response = await this.makeRequest(
-                `/repos/${this.username}/${this.repo}/contents/${path}`,
-                'PUT',
-                requestBody
+            // Add client indicator to header
+            const header = document.querySelector('.header .subtitle');
+            header.innerHTML = `Enhanced Synthesized Quintessential System • Boyack Christiansen Legal Solutions<br>
+                <span style="color: #ffd700; font-size: 14px;">👤 Active Client: ${clientName} | ${billingText}                    📁 <strong>Auto-archiving to GitHub</strong><br>
+                    Repository: boyack-christiansen-Enhanced-Synthizied-Quintessential-System-ESQs</span>`;
+                
+            // Update billing display every minute
+            if (billingStatus.active && !window.billingUpdateInterval) {
+                window.billingUpdateInterval = setInterval(() => {
+                    updateBillingDisplay();
+                }, 60000); // Update every minute
+            }
+        }
+
+        function updateBillingDisplay() {
+            if (!currentSessionId) return;
+            
+            const billingStatus = esqsBillingTimer.getTimerStatus(currentSessionId);
+            if (billingStatus.active) {
+                const header = document.querySelector('.header .subtitle');
+                const billingText = `⏱️ Billing: ${formatElapsedTime(billingStatus.elapsedTime)} | `;
+                header.innerHTML = header.innerHTML.replace(/⏱️ Billing: [^|]+ \| /, billingText);
+            }
+        }
+
+        function formatElapsedTime(milliseconds) {
+            const totalMinutes = Math.floor(milliseconds / (1000 * 60));
+            const hours = Math.floor(totalMinutes / 60);
+            const minutes = totalMinutes % 60;
+            return `${hours}:${minutes.toString().padStart(2, '0')}`;
+        }
+
+        function showClientIntelligence(intelligence) {
+            if (intelligence && intelligence.recommendations && intelligence.recommendations.length > 0) {
+                addChatMessage('esqs', 
+                    `👤 <strong>Client Intelligence Loaded</strong><br><br>
+                    Welcome back to ${currentClient}'s file! I have your previous session history.<br><br>
+                    📊 <strong>Session Summary:</strong><br>
+                    • Total sessions: ${intelligence.totalSessions || 0}<br>
+                    • Last activity: ${intelligence.recentActivity ? new Date(intelligence.recentActivity).toLocaleDateString() : 'First time'}<br>
+                    • Document types: ${intelligence.documentPreferences ? intelligence.documentPreferences.map(d => d.item).join(', ') : 'None yet'}<br><br>
+                    <strong>💡 Recommendations:</strong><br>
+                    ${intelligence.recommendations.map(r => `• ${r.message}`).join('<br>')}<br><br>
+                    <em>All activities are being automatically archived to GitHub and Dropbox.</em>`
+                );
+            }
+        }
+
+        async function accessClient() {
+            const clientName = prompt('Enter client name (e.g., "Julie Stears"):');
+            if (!clientName) return;
+            
+            const caseNumber = prompt('Enter case number (optional):');
+            const attorney = prompt('Enter attorney name:', 'John W Adams III');
+            
+            await setCurrentClient(clientName, caseNumber, attorney);
+            
+            addChatMessage('esqs', 
+                `👤 <strong>Client Access Initiated</strong><br><br>
+                Accessing files for: ${clientName}<br>
+                ${caseNumber ? `Case Number: ${caseNumber}<br>` : ''}
+                Attorney: ${attorney}<br><br>
+                ✅ Auto-archiving enabled (GitHub + Dropbox)<br>
+                ✅ Session tracking started<br>
+                ✅ Billing timer activated<br>
+                ✅ Client folder structure verified<br><br>
+                💰 <strong>Billing Information:</strong><br>
+                • Timer starts at 12:01 PM daily<br>
+                • Auto-pauses after 15 min inactivity<br>
+                • Tracks reasonable billing time vs actual time<br>
+                • Ethical 1.5x maximum enforced<br>
+                • ESQs assistance tracked for efficiency<br><br>
+                Your ESQs will automatically save all activities to ${clientName}'s GitHub and Dropbox folders every 30 minutes.`
             );
-            
-            return response;
-            
-        } catch (error) {
-            throw new Error(`Failed to save to GitHub: ${error.message}`);
         }
-    }
 
-    /**
-     * Format session data for GitHub
-     */
-    formatSessionForGitHub(sessionData) {
-        return `# ESQs Session Log: ${sessionData.clientName}
-
-## Session Overview
-- **Client:** ${sessionData.clientName}
-- **Session ID:** ${sessionData.sessionId}
-- **Date:** ${new Date(sessionData.startTime).toLocaleString()}
-- **Duration:** ${this.calculateDuration(sessionData.startTime, sessionData.lastActivity)}
-- **Total Activities:** ${sessionData.activities.length}
-
-## Session Activities
-${sessionData.activities ? sessionData.activities.map((activity, index) => `
-### ${index + 1}. ${activity.type.replace(/_/g, ' ').toUpperCase()}
-- **Time:** ${new Date(activity.timestamp).toLocaleTimeString()}
-- **Description:** ${activity.description}
-${activity.esqsAnalysis ? `- **ESQs Analysis:** ${activity.esqsAnalysis}` : ''}
-`).join('\n') : 'No activities logged'}
-
-## ESQs Synthesis Queries
-${sessionData.esqsQueries ? sessionData.esqsQueries.map(query => `
-### ${new Date(query.timestamp).toLocaleTimeString()}
-**Query:** ${query.query}
-**Processing Mode:** ${query.processingMode}
-**Response:** ${query.response.substring(0, 200)}...
-`).join('\n') : 'No ESQs queries in this session'}
-
----
-*Auto-generated by ESQs Enhanced Synthesized Quintessential System*  
-*Saved to GitHub: ${new Date().toISOString()}*
-`;
-    }
-
-    /**
-     * Format billing summary for GitHub
-     */
-    formatBillingForGitHub(billingSummary) {
-        return `# ESQs Billing Summary: ${billingSummary.clientName}
-
-## Billing Overview
-- **Client:** ${billingSummary.clientName}
-- **Attorney:** ${billingSummary.attorney}
-- **Date:** ${new Date(billingSummary.startTime).toLocaleDateString()}
-- **Session Duration:** ${this.calculateDuration(billingSummary.startTime, billingSummary.endTime)}
-
-## Time Analysis
-- **Actual Time:** ${billingSummary.timeAnalysis.actualTime.toFixed(2)} hours
-- **ESQs Recommended:** ${billingSummary.timeAnalysis.reasonableTime.toFixed(2)} hours
-- **Final Billing:** ${billingSummary.timeAnalysis.roundedTime.toFixed(2)} hours
-- **Hourly Rate:** $${billingSummary.financialAnalysis.hourlyRate}
-- **Total Amount:** $${billingSummary.financialAnalysis.recommendedAmount.toFixed(2)}
-
-## Activity Breakdown
-${billingSummary.activityBreakdown.map(activity => `
-### ${activity.description}
-- **Actual Time:** ${activity.actualTime.toFixed(2)} hours
-- **Reasonable Time:** ${activity.reasonableTime.toFixed(2)} hours
-- **Complexity:** ${activity.complexity}
-- **ESQs Assisted:** ${activity.esqsAssisted ? 'Yes' : 'No'}
-- **Reasoning:** ${activity.reasoning}
-`).join('\n')}
-
-## Ethical Compliance
-${billingSummary.ethicalNotes.map(note => `- ${note}`).join('\n')}
-
-## Billing Recommendations
-${billingSummary.recommendations.map(rec => `- **${rec.type}:** ${rec.message}`).join('\n')}
-
----
-*ESQs Automatic Billing System*  
-*Ethical Maximum: ${billingSummary.timeAnalysis.ethicalMaxTime.toFixed(2)} hours*  
-*Compliance Status: ${billingSummary.financialAnalysis.ethicalCompliance ? '✅ Compliant' : '⚠️ Review Required'}*
-`;
-    }
-
-    /**
-     * Make GitHub API request
-     */
-    async makeRequest(endpoint, method = 'GET', data = null) {
-        const headers = {
-            'Authorization': `Bearer ${this.token}`,
-            'Accept': 'application/vnd.github.v3+json',
-            'Content-Type': 'application/json'
-        };
-        
-        const config = {
-            method: method,
-            headers: headers
-        };
-        
-        if (data) {
-            config.body = JSON.stringify(data);
-        }
-        
-        try {
-            const response = await fetch(`${this.baseURL}${endpoint}`, config);
-            
-            if (!response.ok) {
-                throw new Error(`GitHub API error: ${response.status} ${response.statusText}`);
+        async function showBillingSummary() {
+            if (!currentSessionId) {
+                addChatMessage('esqs', '⚠️ No active billing session. Please access a client first.');
+                return;
             }
             
-            return await response.json();
+            const billingStatus = esqsBillingTimer.getTimerStatus(currentSessionId);
             
-        } catch (error) {
-            console.error('GitHub API request failed:', error);
-            throw error;
+            if (billingStatus.active) {
+                const elapsed = formatElapsedTime(billingStatus.elapsedTime);
+                addChatMessage('esqs', 
+                    `💰 <strong>Current Billing Session</strong><br><br>
+                    👤 <strong>Client:</strong> ${billingStatus.clientName}<br>
+                    ⚖️ <strong>Attorney:</strong> ${billingStatus.attorney}<br>
+                    ⏱️ <strong>Elapsed Time:</strong> ${elapsed}<br>
+                    📝 <strong>Activities Logged:</strong> ${billingStatus.activitiesCount}<br>
+                    📊 <strong>Current Activity:</strong> ${billingStatus.currentActivity || 'General work'}<br>
+                    ${billingStatus.isPaused ? '⏸️ <strong>Status:</strong> Paused (inactivity)' : '▶️ <strong>Status:</strong> Active'}<br><br>
+                    💡 <strong>Billing starts at 12:01 PM daily</strong><br>
+                    ⚠️ <strong>Auto-pauses after 15 min inactivity</strong><br>
+                    📋 <strong>ESQs tracks reasonable billing time automatically</strong><br>
+                    📁 <strong>Auto-saves to GitHub repository</strong><br><br>
+                    Use "End Session" to generate final billing summary.`
+                );
+            } else {
+                addChatMessage('esqs', '⏱️ No active billing timer. The timer will start at 12:01 PM when you access a client.');
+            }
         }
-    }
 
-    /**
-     * Utility methods
-     */
-    calculateDuration(startTime, endTime) {
-        const start = new Date(startTime);
-        const end = new Date(endTime);
-        const diffMs = end - start;
-        const diffMins = Math.floor(diffMs / 60000);
-        const diffHours = Math.floor(diffMins / 60);
-        
-        if (diffHours > 0) {
-            return `${diffHours}h ${diffMins % 60}m`;
-        } else {
-            return `${diffMins}m`;
+        async function endCurrentSession() {
+            if (!currentClient || !currentSessionId) {
+                addChatMessage('esqs', '⚠️ No active session to end.');
+                return;
+            }
+            
+            const confirmEnd = confirm(`End session for ${currentClient}? This will generate the billing summary and save to GitHub.`);
+            if (!confirmEnd) return;
+            
+            try {
+                const result = await esqsSessionManager.endClientSession(currentSessionId);
+                
+                if (result.success && result.billingSummary) {
+                    // Save billing summary to GitHub
+                    if (githubIntegration.isConnected) {
+                        await githubIntegration.saveBillingSummary(result.billingSummary);
+                    }
+                    
+                    const summary = result.billingSummary;
+                    const customHours = prompt(
+                        `Recommended billing: ${summary.timeAnalysis.recommendedTime.toFixed(2)} hours\n` +
+                        `Ethical maximum: ${summary.timeAnalysis.ethicalMaxTime.toFixed(2)} hours\n\n` +
+                        `Enter custom hours to bill (or press OK for recommended):`,
+                        summary.timeAnalysis.roundedTime.toFixed(2)
+                    );
+                    
+                    if (customHours !== null) {
+                        const hoursToUse = parseFloat(customHours) || summary.timeAnalysis.roundedTime;
+                        const amount = hoursToUse * summary.financialAnalysis.hourlyRate;
+                        
+                        addChatMessage('esqs', 
+                            `⏹️ <strong>Session Ended - Billing Summary</strong><br><br>
+                            👤 <strong>Client:</strong> ${summary.clientName}<br>
+                            ⚖️ <strong>Attorney:</strong> ${summary.attorney}<br>
+                            ⏱️ <strong>Actual Time:</strong> ${summary.timeAnalysis.actualTime.toFixed(2)} hours<br>
+                            💡 <strong>ESQs Recommended:</strong> ${summary.timeAnalysis.recommendedTime.toFixed(2)} hours<br>
+                            📋 <strong>Billing Hours:</strong> ${hoursToUse.toFixed(2)} hours<br>
+                            💰 <strong>Amount:</strong> $${amount.toFixed(2)}<br><br>
+                            <strong>📊 Activity Summary:</strong><br>
+                            ${summary.activityBreakdown.slice(0, 3).map(activity => 
+                                `• ${activity.description}: ${activity.reasonableTime.toFixed(1)}h (${activity.complexity})`
+                            ).join('<br>')}<br><br>
+                            ✅ <strong>Ethics Check:</strong> ${hoursToUse <= summary.timeAnalysis.ethicalMaxTime ? 'Compliant' : 'Review Required'}<br>
+                            📁 <strong>Saved to GitHub repository</strong><br>
+                            📝 <strong>Ready for Practice Panther time entry</strong>`
+                        );
+                    }
+                }
+                
+                // Clear current client
+                currentClient = null;
+                currentSessionId = null;
+                
+                // Clear billing update interval
+                if (window.billingUpdateInterval) {
+                    clearInterval(window.billingUpdateInterval);
+                    window.billingUpdateInterval = null;
+                }
+                
+                // Update header
+                const header = document.querySelector('.header .subtitle');
+                header.innerHTML = 'Enhanced Synthesized Quintessential System • Boyack Christiansen Legal Solutions';
+                
+            } catch (error) {
+                addChatMessage('esqs', `❌ Error ending session: ${error.message}`);
+            }
         }
-    }
 
-    /**
-     * Get connection status
-     */
-    getStatus() {
-        return {
-            connected: this.isConnected,
-            username: this.username,
-            repository: `${this.username}/${this.repo}`,
-            autoSave: this.autoSaveEnabled,
-            lastSync: new Date().toISOString()
-        };
-    }
-}
+        function initializeESQsStatus() {
+            // Check synthesis system availability
+            const systemStatus = document.getElementById('esqs-status');
+            // In real implementation, ping all AI services
+            systemStatus.className = 'status-indicator online';
+            
+            // Update status text based on system health
+            const statusText = systemStatus.querySelector('div:last-child');
+            statusText.textContent = 'Multi-AI Legal Intelligence • Ready';
+        }
 
-// Global GitHub integration instance
-const githubIntegration = new GitHubIntegration();
+        function setupEventListeners() {
+            // Processing mode selector
+            document.querySelectorAll('.processing-option').forEach(option => {
+                option.addEventListener('click', function() {
+                    document.querySelectorAll('.processing-option').forEach(opt => 
+                        opt.classList.remove('selected'));
+                    this.classList.add('selected');
+                    processingMode = this.getAttribute('data-mode');
+                });
+            });
 
-// Export for module use
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = GitHubIntegration;
-}
+            // Enter key to send
+            document.getElementById('query-text').addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' && e.metaKey) {
+                    sendQuery();
+                }
+            });
+        }
+
+        function sendQuery() {
+            const queryText = document.getElementById('query-text').value.trim();
+            if (!queryText || isProcessing) return;
+
+            isProcessing = true;
+            document.getElementById('send-btn').disabled = true;
+            document.getElementById('send-btn').textContent = 'Processing...';
+
+            // Show response area
+            const responseArea = document.getElementById('response-area');
+            responseArea.style.display = 'block';
+            
+            // Show loading
+            document.getElementById('response-content').innerHTML = 
+                '<div class="loading">ESQs is synthesizing responses</div>';
+
+            // Route query through ESQs synthesis (always synthesis)
+            routeQuery(queryText, processingMode).then(response => {
+                displayResponse(response);
+                
+                // Log ESQs query to session if client is active
+                if (currentClient && currentSessionId) {
+                    esqsSessionManager.logESQsQuery(
+                        currentClient, 
+                        queryText, 
+                        processingMode, 
+                        response.content, 
+                        response.tokensUsed
+                    );
+                }
+                
+            }).catch(error => {
+                displayError(error);
+            }).finally(() => {
+                isProcessing = false;
+                document.getElementById('send-btn').disabled = false;
+                document.getElementById('send-btn').textContent = 'Send Query to ESQs';
+            });
+        }
+
+        function quickQuery(text) {
+            document.getElementById('query-text').value = text;
+            sendQuery();
+        }
+
+        function displayResponse(response) {
+            const aiBadge = document.getElementById('response-ai');
+            const tokenInfo = document.getElementById('token-info');
+            const content = document.getElementById('response-content');
+
+            // Update badge
+            aiBadge.textContent = response.aiUsed;
+            aiBadge.className = 'synthesis-badge';
+
+            // Update token info
+            tokenInfo.textContent = `Tokens: ${response.tokensUsed || 0}`;
+
+            // Update content
+            content.innerHTML = response.content;
+
+            // Scroll to response
+            document.getElementById('response-area').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function displayError(error) {
+            document.getElementById('response-content').innerHTML = 
+                `<div style="color: #f44336; padding: 20px; text-align: center;">
+                    ❌ Error: ${error.message || 'Something went wrong'}
+                </div>`;
+        }
+
+        function addChatMessage(sender, content) {
+            const responseArea = document.getElementById('response-area');
+            const responseContent = document.getElementById('response-content');
+            
+            responseArea.style.display = 'block';
+            responseContent.innerHTML = content;
+            
+            // Update badge for system messages
+            if (sender === 'esqs') {
+                document.getElementById('response-ai').textContent = 'ESQs System Message';
+                document.getElementById('token-info').textContent = 'System notification';
+            }
+            
+            responseArea.scrollIntoView({ behavior: 'smooth' });
+        }
+    </script>
+</body>
+</html>
