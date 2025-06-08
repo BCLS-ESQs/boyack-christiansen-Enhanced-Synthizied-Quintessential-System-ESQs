@@ -387,6 +387,8 @@
         // 🔑 PUT YOUR GITHUB TOKEN HERE (replace the text between quotes):
         const GITHUB_TOKEN = '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';
         
+        // Repository: boyack-christiansen-Enhanced-Synthizied-Quintessential-System-ESQs
+        
         // Global variables
         let processingMode = 'normal';
         let isProcessing = false;
@@ -504,7 +506,8 @@
             // Add client indicator to header
             const header = document.querySelector('.header .subtitle');
             header.innerHTML = `Enhanced Synthesized Quintessential System • Boyack Christiansen Legal Solutions<br>
-                <span style="color: #ffd700; font-size: 14px;">👤 Active Client: ${clientName} | ${billingText}📁 Auto-archiving to GitHub</span>`;
+                <span style="color: #ffd700; font-size: 14px;">👤 Active Client: ${clientName} | ${billingText}                    📁 <strong>Auto-archiving to GitHub</strong><br>
+                    Repository: boyack-christiansen-Enhanced-Synthizied-Quintessential-System-ESQs</span>`;
                 
             // Update billing display every minute
             if (billingStatus.active && !window.billingUpdateInterval) {
