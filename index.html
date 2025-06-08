@@ -1,68 +1,4 @@
-async function accessClient() {
-            const clientName = prompt('Enter client name (e.g., "Julie Stears"):');
-            if (!clientName) return;
-            
-            const caseNumber = prompt('Enter case number (optional):');
-            const attorney = prompt('Enter attorney name:', 'John W Adams III');
-            
-            await setCurrentClient(clientName, caseNumber, attorney);
-            
-            addChatMessage('claude', 
-                `👤 <strong>Client Access Initiated</strong><br><br>
-                Accessing files for: ${clientName}<br>
-                ${caseNumber ? `Case Number: ${caseNumber}<br>` : ''}
-                Attorney: ${attorney}<br><br>
-                ✅ Auto-archiving enabled<br>
-                ✅ Session tracking started<br>
-                ✅ Billing timer activated<br>
-                ✅ Client folder structure verified<br><br>
-                💰 <strong>Billing Information:</strong><br>
-                • Timer starts at 12:01 PM daily<br>
-                • Auto-pauses after 15 min inactivity<br>
-                • Tracks reasonable billing time vs actual time<br>
-                • Ethical 1.5x maximum enforced<br>
-                • ESQs assistance tracked for efficiency<br><br>
-                Your ESQs will automatically save all activities to ${clientName}'s archive folder every 30 minutes.`
-            );
-        }            if (message.includes('dropbox') || message.includes('archive') || message.includes('files')) {
-                // Log search activity if client is active
-                if (currentClient) {
-                    esqsSessionManager.logSearch(currentClient, userMessage, 0);
-                }
-                
-                return `🗄️ <strong>ESQs Archive Management</strong><br><br>
-                ${currentClient ? `Searching ${currentClient}'s archive folder and ` : 'I can search your '}Dropbox legal archives. 
-                ESQs provides intelligent file organization, document analysis, and collaborative 
-                editing capabilities for your entire legal document collection.<br><br>
-                ${currentClient ? `All search activity is being logged to ${currentClient}'s session archive.` : 'Full file management with legal intelligence and automated organization.'}`;
-            }
-            
-            if (message.includes('search') && message.includes('documents')) {
-                // Log search activity if client is active
-                if (currentClient) {
-                    esqsSessionManager.logSearch(currentClient, userMessage, 0);
-                }
-                
-                return `🔍 <strong>ESQs Intelligent Document Search</strong><br><br>
-                Multiple digital attorneys are searching ${currentClient ? `${currentClient}'s files` : 'your archives'} using advanced legal 
-                intelligence. ESQs can find documents by content, legal concepts, client names, 
-                case references, and more.<br><br>
-                Search results include document analysis and relevance scoring.`;
-            }            if (message.includes('practicepanther') || message.includes('case management')) {
-                return `📁 <strong>PracticePanther Integration</strong><br><br>
-                Your ESQs can connect to PracticePanther for comprehensive case management analysis. 
-                We'll access client files, case timelines, billing data, and documents to provide 
-                strategic insights and automated case management assistance.<br><br>
-                Ready to sync with your PracticePanther database for enhanced case intelligence.`;
-            }
-            
-            if (message.includes('lexis') || message.includes('legal research')) {
-                return `📚 <strong>Lexis Legal Research</strong><br><br>
-                ESQs integrates with Lexis for advanced legal research synthesis. Multiple digital 
-                attorneys will search case law, statutes, regulations, and legal commentary to provide 
-                comprehensive research analysis.<br><br>
-                Your research will be synthesized from multiple AI perspectives for maximum coverage.`;
-            }<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -77,7 +13,7 @@ async function accessClient() {
     <!-- Mobile Optimized -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <meta name="apple-mobile-web-app-title" content="AI RAID">
+    <meta name="apple-mobile-web-app-title" content="ESQs">
     
     <style>
         * {
@@ -117,7 +53,7 @@ async function accessClient() {
             color: #666;
         }
 
-        .ai-status {
+        .system-status {
             display: flex;
             gap: 10px;
             padding: 15px 20px;
@@ -125,23 +61,25 @@ async function accessClient() {
             margin: 15px;
             border-radius: 15px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            justify-content: center;
         }
 
-        .ai-indicator {
+        .status-indicator {
             flex: 1;
             text-align: center;
             padding: 10px;
             border-radius: 10px;
             font-size: 12px;
             font-weight: 500;
+            max-width: 200px;
         }
 
-        .ai-indicator.online {
+        .status-indicator.online {
             background: #e8f5e8;
             color: #2e7d2e;
         }
 
-        .ai-indicator.offline {
+        .status-indicator.offline {
             background: #fce8e6;
             color: #c5221f;
         }
@@ -173,16 +111,16 @@ async function accessClient() {
             color: #999;
         }
 
-        .ai-selector {
+        .processing-selector {
             display: flex;
             gap: 10px;
             margin: 15px 0;
             flex-wrap: wrap;
         }
 
-        .ai-option {
+        .processing-option {
             flex: 1;
-            min-width: 100px;
+            min-width: 150px;
             padding: 12px 8px;
             border: 2px solid #e0e0e0;
             border-radius: 12px;
@@ -193,13 +131,13 @@ async function accessClient() {
             background: white;
         }
 
-        .ai-option.selected {
+        .processing-option.selected {
             border-color: #1a73e8;
             background: #e8f0fe;
             color: #1a73e8;
         }
 
-        .ai-option:hover {
+        .processing-option:hover {
             transform: translateY(-2px);
             box-shadow: 0 4px 10px rgba(0,0,0,0.1);
         }
@@ -246,29 +184,11 @@ async function accessClient() {
             border-bottom: 1px solid #eee;
         }
 
-        .ai-badge {
+        .synthesis-badge {
             padding: 5px 10px;
             border-radius: 15px;
             font-size: 12px;
             font-weight: 500;
-        }
-
-        .ai-badge.claude {
-            background: #f3e5f5;
-            color: #7b1fa2;
-        }
-
-        .ai-badge.gemini {
-            background: #e3f2fd;
-            color: #1976d2;
-        }
-
-        .ai-badge.openai {
-            background: #e8f5e8;
-            color: #388e3c;
-        }
-
-        .ai-badge.synthesis {
             background: #fff3e0;
             color: #f57c00;
         }
@@ -341,76 +261,17 @@ async function accessClient() {
             color: #333;
         }
 
-        .settings-panel {
-            position: fixed;
-            top: 0;
-            right: -300px;
-            width: 300px;
-            height: 100vh;
-            background: white;
-            box-shadow: -2px 0 20px rgba(0,0,0,0.1);
-            transition: right 0.3s;
-            z-index: 200;
-            padding: 20px;
-            overflow-y: auto;
-        }
-
-        .settings-panel.open {
-            right: 0;
-        }
-
-        .settings-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            background: rgba(0,0,0,0.5);
-            z-index: 150;
-            opacity: 0;
-            visibility: hidden;
-            transition: all 0.3s;
-        }
-
-        .settings-overlay.open {
-            opacity: 1;
-            visibility: visible;
-        }
-
-        .settings-button {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            width: 40px;
-            height: 40px;
-            background: rgba(255, 255, 255, 0.9);
-            border: none;
-            border-radius: 50%;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 18px;
-            z-index: 110;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-
         @media (max-width: 768px) {
-            .ai-selector {
+            .processing-selector {
                 flex-direction: column;
             }
             
-            .ai-option {
+            .processing-option {
                 flex: none;
             }
             
             .quick-actions {
                 grid-template-columns: repeat(2, 1fr);
-            }
-            
-            .settings-panel {
-                width: 100%;
-                right: -100%;
             }
         }
 
@@ -437,43 +298,6 @@ async function accessClient() {
     </style>
 </head>
 <body>
-    <!-- PWA Install Prompt -->
-    <div id="install-prompt" class="install-prompt">
-        📱 Install AI RAID as an app for quick access!
-    </div>
-
-    <!-- Settings Button -->
-    <button class="settings-button" onclick="toggleSettings()">⚙️</button>
-
-    <!-- Settings Panel -->
-    <div id="settings-overlay" class="settings-overlay" onclick="toggleSettings()"></div>
-    <div id="settings-panel" class="settings-panel">
-        <h3>AI RAID Settings</h3>
-        <div style="margin: 20px 0;">
-            <label>
-                <input type="checkbox" id="auto-route" checked> Auto-route queries
-            </label>
-        </div>
-        <div style="margin: 20px 0;">
-            <label>
-                <input type="checkbox" id="token-tracking" checked> Track token usage
-            </label>
-        </div>
-        <div style="margin: 20px 0;">
-            <label>Default AI:
-                <select id="default-ai">
-                    <option value="auto">Auto-select</option>
-                    <option value="claude">Claude</option>
-                    <option value="gemini">Gemini Pro</option>
-                    <option value="openai">OpenAI</option>
-                </select>
-            </label>
-        </div>
-        <button onclick="clearHistory()" style="width: 100%; padding: 10px; margin-top: 20px; background: #f44336; color: white; border: none; border-radius: 8px;">
-            Clear History
-        </button>
-    </div>
-
     <!-- Header -->
     <div class="header">
         <h1>⚖️ ESQs Legal Intelligence</h1>
@@ -481,10 +305,14 @@ async function accessClient() {
     </div>
 
     <!-- ESQs System Status -->
-    <div class="ai-status">
-        <div class="ai-indicator online" id="system-status">
+    <div class="system-status">
+        <div class="status-indicator online" id="esqs-status">
             <div>⚖️ ESQs SYNTHESIS ENGINE</div>
             <div style="font-size: 10px;">Enhanced Synthesized Quintessential System • Ready</div>
+        </div>
+        <div class="status-indicator online" id="github-status">
+            <div>📁 GITHUB INTEGRATION</div>
+            <div style="font-size: 10px;">Connecting...</div>
         </div>
     </div>
 
@@ -494,23 +322,23 @@ async function accessClient() {
         <div class="query-input">
             <textarea 
                 id="query-text" 
-                placeholder="Ask anything... The AI RAID system will route your query to the best AI or combine multiple responses for optimal results."
+                placeholder="Ask anything... The ESQs system will synthesize responses from multiple AIs for optimal legal analysis."
             ></textarea>
             
             <!-- Processing Mode Selection -->
-            <div class="ai-selector">
-                <div class="ai-option selected" data-mode="normal">
+            <div class="processing-selector">
+                <div class="processing-option selected" data-mode="normal">
                     ⚡ Normal Processing
                     <div style="font-size: 11px; color: #666; margin-top: 3px;">Fast synthesis • 2-3 AIs</div>
                 </div>
-                <div class="ai-option" data-mode="deep">
+                <div class="processing-option" data-mode="deep">
                     🧠 Deep Think
                     <div style="font-size: 11px; color: #666; margin-top: 3px;">Comprehensive • All AIs + analysis</div>
                 </div>
             </div>
             
             <button class="send-button" onclick="sendQuery()" id="send-btn">
-                Send Query
+                Send Query to ESQs
             </button>
         </div>
 
@@ -537,7 +365,7 @@ async function accessClient() {
         <!-- Response Area -->
         <div class="response-area" id="response-area" style="display: none;">
             <div class="response-header">
-                <div class="ai-badge" id="response-ai">Multi-AI Response</div>
+                <div class="synthesis-badge" id="response-ai">ESQs Multi-AI Synthesis</div>
                 <div class="token-info" id="token-info">Tokens: 0</div>
             </div>
             <div class="response-content" id="response-content">
@@ -553,7 +381,12 @@ async function accessClient() {
     <script src="dropbox-archive-integration.js"></script>
     <script src="esqs-session-manager.js"></script>
     <script src="esqs-billing-timer.js"></script>
+    <script src="github-integration.js"></script>
     <script>
+        // =================== GITHUB CONNECTION ===================
+        // 🔑 PUT YOUR GITHUB TOKEN HERE (replace the text between quotes):
+        const GITHUB_TOKEN = 'PUT_YOUR_GITHUB_TOKEN_HERE';
+        
         // Global variables
         let processingMode = 'normal';
         let isProcessing = false;
@@ -562,11 +395,57 @@ async function accessClient() {
 
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
-            initializeAIStatus();
+            initializeESQsStatus();
             setupEventListeners();
-            checkPWAInstall();
+            connectToGitHub();
             initializeSessionTracking();
         });
+
+        // =================== GITHUB INTEGRATION ===================
+        async function connectToGitHub() {
+            try {
+                updateGitHubStatus('🔄 Connecting...');
+                
+                if (GITHUB_TOKEN === 'PUT_YOUR_GITHUB_TOKEN_HERE') {
+                    updateGitHubStatus('⚠️ Token Needed');
+                    console.log('⚠️ Please add your GitHub token to the GITHUB_TOKEN variable');
+                    return;
+                }
+                
+                const result = await githubIntegration.connect(GITHUB_TOKEN);
+                
+                if (result.success) {
+                    updateGitHubStatus('✅ Connected');
+                    console.log('✅ ESQs connected to GitHub successfully!');
+                } else {
+                    updateGitHubStatus('❌ Failed');
+                    console.error('❌ GitHub connection failed:', result.error);
+                }
+                
+            } catch (error) {
+                updateGitHubStatus('❌ Error');
+                console.error('GitHub connection error:', error);
+            }
+        }
+
+        function updateGitHubStatus(status) {
+            const statusElement = document.getElementById('github-status');
+            if (statusElement) {
+                statusElement.innerHTML = `
+                    <div>📁 GITHUB INTEGRATION</div>
+                    <div style="font-size: 10px;">${status}</div>
+                `;
+                
+                // Update status indicator color
+                if (status.includes('✅')) {
+                    statusElement.className = 'status-indicator online';
+                } else if (status.includes('❌') || status.includes('⚠️')) {
+                    statusElement.className = 'status-indicator offline';
+                } else {
+                    statusElement.className = 'status-indicator online';
+                }
+            }
+        }
 
         function initializeSessionTracking() {
             // Auto-detect client from URL or prompt
@@ -592,6 +471,17 @@ async function accessClient() {
                 if (sessionResult.success) {
                     currentSessionId = sessionResult.sessionId;
                     
+                    // Auto-save to GitHub
+                    if (githubIntegration.isConnected) {
+                        await githubIntegration.saveSession({
+                            clientName: clientName,
+                            sessionId: currentSessionId,
+                            startTime: new Date().toISOString(),
+                            activities: [],
+                            lastActivity: new Date().toISOString()
+                        });
+                    }
+                    
                     // Update UI to show current client
                     updateClientDisplay(clientName, sessionResult.clientIntelligence);
                     
@@ -614,7 +504,7 @@ async function accessClient() {
             // Add client indicator to header
             const header = document.querySelector('.header .subtitle');
             header.innerHTML = `Enhanced Synthesized Quintessential System • Boyack Christiansen Legal Solutions<br>
-                <span style="color: #ffd700; font-size: 14px;">👤 Active Client: ${clientName} | ${billingText}📝 Auto-archiving enabled</span>`;
+                <span style="color: #ffd700; font-size: 14px;">👤 Active Client: ${clientName} | ${billingText}📁 Auto-archiving to GitHub</span>`;
                 
             // Update billing display every minute
             if (billingStatus.active && !window.billingUpdateInterval) {
@@ -643,8 +533,8 @@ async function accessClient() {
         }
 
         function showClientIntelligence(intelligence) {
-            if (intelligence && intelligence.recommendations.length > 0) {
-                addChatMessage('claude', 
+            if (intelligence && intelligence.recommendations && intelligence.recommendations.length > 0) {
+                addChatMessage('esqs', 
                     `👤 <strong>Client Intelligence Loaded</strong><br><br>
                     Welcome back to ${currentClient}'s file! I have your previous session history.<br><br>
                     📊 <strong>Session Summary:</strong><br>
@@ -653,14 +543,42 @@ async function accessClient() {
                     • Document types: ${intelligence.documentPreferences ? intelligence.documentPreferences.map(d => d.item).join(', ') : 'None yet'}<br><br>
                     <strong>💡 Recommendations:</strong><br>
                     ${intelligence.recommendations.map(r => `• ${r.message}`).join('<br>')}<br><br>
-                    <em>All activities are being automatically archived to ${currentClient}'s Dropbox folder.</em>`
+                    <em>All activities are being automatically archived to GitHub and Dropbox.</em>`
                 );
             }
         }
 
+        async function accessClient() {
+            const clientName = prompt('Enter client name (e.g., "Julie Stears"):');
+            if (!clientName) return;
+            
+            const caseNumber = prompt('Enter case number (optional):');
+            const attorney = prompt('Enter attorney name:', 'John W Adams III');
+            
+            await setCurrentClient(clientName, caseNumber, attorney);
+            
+            addChatMessage('esqs', 
+                `👤 <strong>Client Access Initiated</strong><br><br>
+                Accessing files for: ${clientName}<br>
+                ${caseNumber ? `Case Number: ${caseNumber}<br>` : ''}
+                Attorney: ${attorney}<br><br>
+                ✅ Auto-archiving enabled (GitHub + Dropbox)<br>
+                ✅ Session tracking started<br>
+                ✅ Billing timer activated<br>
+                ✅ Client folder structure verified<br><br>
+                💰 <strong>Billing Information:</strong><br>
+                • Timer starts at 12:01 PM daily<br>
+                • Auto-pauses after 15 min inactivity<br>
+                • Tracks reasonable billing time vs actual time<br>
+                • Ethical 1.5x maximum enforced<br>
+                • ESQs assistance tracked for efficiency<br><br>
+                Your ESQs will automatically save all activities to ${clientName}'s GitHub and Dropbox folders every 30 minutes.`
+            );
+        }
+
         async function showBillingSummary() {
             if (!currentSessionId) {
-                addChatMessage('claude', '⚠️ No active billing session. Please access a client first.');
+                addChatMessage('esqs', '⚠️ No active billing session. Please access a client first.');
                 return;
             }
             
@@ -668,7 +586,7 @@ async function accessClient() {
             
             if (billingStatus.active) {
                 const elapsed = formatElapsedTime(billingStatus.elapsedTime);
-                addChatMessage('claude', 
+                addChatMessage('esqs', 
                     `💰 <strong>Current Billing Session</strong><br><br>
                     👤 <strong>Client:</strong> ${billingStatus.clientName}<br>
                     ⚖️ <strong>Attorney:</strong> ${billingStatus.attorney}<br>
@@ -678,27 +596,33 @@ async function accessClient() {
                     ${billingStatus.isPaused ? '⏸️ <strong>Status:</strong> Paused (inactivity)' : '▶️ <strong>Status:</strong> Active'}<br><br>
                     💡 <strong>Billing starts at 12:01 PM daily</strong><br>
                     ⚠️ <strong>Auto-pauses after 15 min inactivity</strong><br>
-                    📋 <strong>ESQs tracks reasonable billing time automatically</strong><br><br>
+                    📋 <strong>ESQs tracks reasonable billing time automatically</strong><br>
+                    📁 <strong>Auto-saves to GitHub repository</strong><br><br>
                     Use "End Session" to generate final billing summary.`
                 );
             } else {
-                addChatMessage('claude', '⏱️ No active billing timer. The timer will start at 12:01 PM when you access a client.');
+                addChatMessage('esqs', '⏱️ No active billing timer. The timer will start at 12:01 PM when you access a client.');
             }
         }
 
         async function endCurrentSession() {
             if (!currentClient || !currentSessionId) {
-                addChatMessage('claude', '⚠️ No active session to end.');
+                addChatMessage('esqs', '⚠️ No active session to end.');
                 return;
             }
             
-            const confirmEnd = confirm(`End session for ${currentClient}? This will generate the billing summary.`);
+            const confirmEnd = confirm(`End session for ${currentClient}? This will generate the billing summary and save to GitHub.`);
             if (!confirmEnd) return;
             
             try {
                 const result = await esqsSessionManager.endClientSession(currentSessionId);
                 
                 if (result.success && result.billingSummary) {
+                    // Save billing summary to GitHub
+                    if (githubIntegration.isConnected) {
+                        await githubIntegration.saveBillingSummary(result.billingSummary);
+                    }
+                    
                     const summary = result.billingSummary;
                     const customHours = prompt(
                         `Recommended billing: ${summary.timeAnalysis.recommendedTime.toFixed(2)} hours\n` +
@@ -711,19 +635,20 @@ async function accessClient() {
                         const hoursToUse = parseFloat(customHours) || summary.timeAnalysis.roundedTime;
                         const amount = hoursToUse * summary.financialAnalysis.hourlyRate;
                         
-                        addChatMessage('claude', 
+                        addChatMessage('esqs', 
                             `⏹️ <strong>Session Ended - Billing Summary</strong><br><br>
                             👤 <strong>Client:</strong> ${summary.clientName}<br>
                             ⚖️ <strong>Attorney:</strong> ${summary.attorney}<br>
                             ⏱️ <strong>Actual Time:</strong> ${summary.timeAnalysis.actualTime.toFixed(2)} hours<br>
                             💡 <strong>ESQs Recommended:</strong> ${summary.timeAnalysis.recommendedTime.toFixed(2)} hours<br>
                             📋 <strong>Billing Hours:</strong> ${hoursToUse.toFixed(2)} hours<br>
-                            💰 <strong>Amount:</strong> ${amount.toFixed(2)}<br><br>
+                            💰 <strong>Amount:</strong> $${amount.toFixed(2)}<br><br>
                             <strong>📊 Activity Summary:</strong><br>
                             ${summary.activityBreakdown.slice(0, 3).map(activity => 
                                 `• ${activity.description}: ${activity.reasonableTime.toFixed(1)}h (${activity.complexity})`
                             ).join('<br>')}<br><br>
                             ✅ <strong>Ethics Check:</strong> ${hoursToUse <= summary.timeAnalysis.ethicalMaxTime ? 'Compliant' : 'Review Required'}<br>
+                            📁 <strong>Saved to GitHub repository</strong><br>
                             📝 <strong>Ready for Practice Panther time entry</strong>`
                         );
                     }
@@ -744,15 +669,15 @@ async function accessClient() {
                 header.innerHTML = 'Enhanced Synthesized Quintessential System • Boyack Christiansen Legal Solutions';
                 
             } catch (error) {
-                addChatMessage('claude', `❌ Error ending session: ${error.message}`);
+                addChatMessage('esqs', `❌ Error ending session: ${error.message}`);
             }
         }
 
-        function initializeAIStatus() {
+        function initializeESQsStatus() {
             // Check synthesis system availability
-            const systemStatus = document.getElementById('system-status');
+            const systemStatus = document.getElementById('esqs-status');
             // In real implementation, ping all AI services
-            systemStatus.className = 'ai-indicator online';
+            systemStatus.className = 'status-indicator online';
             
             // Update status text based on system health
             const statusText = systemStatus.querySelector('div:last-child');
@@ -761,9 +686,9 @@ async function accessClient() {
 
         function setupEventListeners() {
             // Processing mode selector
-            document.querySelectorAll('.ai-option').forEach(option => {
+            document.querySelectorAll('.processing-option').forEach(option => {
                 option.addEventListener('click', function() {
-                    document.querySelectorAll('.ai-option').forEach(opt => 
+                    document.querySelectorAll('.processing-option').forEach(opt => 
                         opt.classList.remove('selected'));
                     this.classList.add('selected');
                     processingMode = this.getAttribute('data-mode');
@@ -792,9 +717,9 @@ async function accessClient() {
             
             // Show loading
             document.getElementById('response-content').innerHTML = 
-                '<div class="loading">Processing your query</div>';
+                '<div class="loading">ESQs is synthesizing responses</div>';
 
-            // Route query based on processing mode (always synthesis)
+            // Route query through ESQs synthesis (always synthesis)
             routeQuery(queryText, processingMode).then(response => {
                 displayResponse(response);
                 
@@ -810,13 +735,11 @@ async function accessClient() {
                 }
                 
             }).catch(error => {
-                displayResponse(response);
-            }).catch(error => {
                 displayError(error);
             }).finally(() => {
                 isProcessing = false;
                 document.getElementById('send-btn').disabled = false;
-                document.getElementById('send-btn').textContent = 'Send Query';
+                document.getElementById('send-btn').textContent = 'Send Query to ESQs';
             });
         }
 
@@ -832,7 +755,7 @@ async function accessClient() {
 
             // Update badge
             aiBadge.textContent = response.aiUsed;
-            aiBadge.className = `ai-badge ${response.aiUsed.toLowerCase().replace(' ', '')}`;
+            aiBadge.className = 'synthesis-badge';
 
             // Update token info
             tokenInfo.textContent = `Tokens: ${response.tokensUsed || 0}`;
@@ -851,42 +774,20 @@ async function accessClient() {
                 </div>`;
         }
 
-        function toggleSettings() {
-            const panel = document.getElementById('settings-panel');
-            const overlay = document.getElementById('settings-overlay');
+        function addChatMessage(sender, content) {
+            const responseArea = document.getElementById('response-area');
+            const responseContent = document.getElementById('response-content');
             
-            if (panel.classList.contains('open')) {
-                panel.classList.remove('open');
-                overlay.classList.remove('open');
-            } else {
-                panel.classList.add('open');
-                overlay.classList.add('open');
+            responseArea.style.display = 'block';
+            responseContent.innerHTML = content;
+            
+            // Update badge for system messages
+            if (sender === 'esqs') {
+                document.getElementById('response-ai').textContent = 'ESQs System Message';
+                document.getElementById('token-info').textContent = 'System notification';
             }
-        }
-
-        function clearHistory() {
-            localStorage.removeItem('ai-raid-history');
-            alert('History cleared!');
-        }
-
-        function checkPWAInstall() {
-            let deferredPrompt;
             
-            window.addEventListener('beforeinstallprompt', (e) => {
-                e.preventDefault();
-                deferredPrompt = e;
-                document.getElementById('install-prompt').classList.add('show');
-            });
-
-            document.getElementById('install-prompt').addEventListener('click', () => {
-                if (deferredPrompt) {
-                    deferredPrompt.prompt();
-                    deferredPrompt.userChoice.then((choiceResult) => {
-                        deferredPrompt = null;
-                        document.getElementById('install-prompt').classList.remove('show');
-                    });
-                }
-            });
+            responseArea.scrollIntoView({ behavior: 'smooth' });
         }
     </script>
 </body>
