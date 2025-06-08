@@ -385,7 +385,7 @@
     <script>
         // =================== GITHUB CONNECTION ===================
         // 🔑 PUT YOUR GITHUB TOKEN HERE (replace the text between quotes):
-        const GITHUB_TOKEN = 'PUT_YOUR_GITHUB_TOKEN_HERE';
+        const GITHUB_TOKEN = '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';
         
         // Repository: boyack-christiansen-Enhanced-Synthizied-Quintessential-System-ESQs
         
