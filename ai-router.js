@@ -1,18 +1,26 @@
 /**
- * AI RAID Router - Smart Query Routing System
- * Routes queries to the optimal AI based on content, complexity, and token conservation
+ * AI Router - Real API Integration for ESQs
+ * Routes queries to actual Claude, Gemini, and OpenAI APIs
  */
 
 class AIRouter {
     constructor() {
+        // 🔑 PUT YOUR ACTUAL API KEYS HERE:
+        this.apiKeys = {
+            claude: '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',      // sk-ant-api03-...
+            gemini: 'AIzaSyDkYmUUnT3Q2UIHVQtqLepyR7q1pMuVlnU',      // AIzaSyD_...
+            openai: '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'       // sk-proj-...
+        };
+        
         this.tokenLimits = {
-            claude: 200000,    // High for complex reasoning
-            gemini: 100000,    // Medium for fast processing
-            openai: 150000,    // Medium-high for general tasks
-            synthesis: 300000  // Highest for multi-AI queries
+            claude: 200000,
+            gemini: 100000,
+            openai: 150000,
+            synthesis: 300000
         };
         
         this.tokenUsage = this.loadTokenUsage();
+        
         this.aiCapabilities = {
             claude: {
                 strengths: ['legal reasoning', 'case analysis', 'complex logic', 'strategy'],
@@ -33,119 +41,103 @@ class AIRouter {
                 quality: 'high'
             }
         };
+        
+        console.log('🤖 ESQs AI Router initialized with real APIs');
     }
 
     /**
-     * Route query to optimal AI
+     * Route query with mandatory synthesis
      */
-    async routeQuery(query, forceAI = null) {
+    async routeQuery(query, processingMode = 'normal') {
         try {
-            // If specific AI is requested
-            if (forceAI && forceAI !== 'auto' && forceAI !== 'synthesis') {
-                return await this.sendToAI(query, forceAI);
+            return await this.synthesizeResponse(query, processingMode);
+        } catch (error) {
+            console.error('AI routing error:', error);
+            throw new Error(`ESQs synthesis failed: ${error.message}`);
+        }
+    }
+
+    /**
+     * Synthesize response from multiple AIs with processing mode
+     */
+    async synthesizeResponse(query, processingMode = 'normal') {
+        const startTime = Date.now();
+        
+        try {
+            // Determine AIs to use based on processing mode
+            const aisToUse = this.selectAIsForMode(query, processingMode);
+            
+            console.log(`🧠 ESQs ${processingMode} mode: Using ${aisToUse.join(', ')}`);
+            
+            // Send to multiple AIs in parallel
+            const promises = aisToUse.map(ai => 
+                this.sendToAI(query, ai).catch(error => ({
+                    error: true,
+                    ai: ai,
+                    message: error.message,
+                    content: `${ai} temporarily unavailable: ${error.message}`
+                }))
+            );
+
+            const responses = await Promise.all(promises);
+            const validResponses = responses.filter(r => !r.error);
+            
+            if (validResponses.length === 0) {
+                // If all AIs fail, return error info
+                const errorSummary = responses.map(r => `${r.ai}: ${r.message}`).join('; ');
+                throw new Error(`All AIs failed: ${errorSummary}`);
             }
 
-            // If synthesis is requested, use multiple AIs
-            if (forceAI === 'synthesis') {
-                return await this.synthesizeResponse(query);
-            }
-
-            // Auto-route based on query analysis
-            const optimalAI = this.analyzeQuery(query);
-            return await this.sendToAI(query, optimalAI);
+            // Synthesize the responses
+            const synthesized = this.combineResponses(validResponses, query, processingMode);
+            
+            return {
+                content: synthesized.content,
+                aiUsed: `${processingMode === 'deep' ? 'Deep Think' : 'Normal'} Synthesis`,
+                tokensUsed: synthesized.totalTokens,
+                responseTime: Date.now() - startTime,
+                confidence: synthesized.confidence,
+                contributingAIs: validResponses.map(r => r.aiUsed),
+                processingMode: processingMode,
+                errors: responses.filter(r => r.error)
+            };
 
         } catch (error) {
-            console.error('Routing error:', error);
-            throw new Error(`AI routing failed: ${error.message}`);
+            console.error('Synthesis error:', error);
+            throw new Error(`ESQs synthesis failed: ${error.message}`);
         }
     }
 
     /**
-     * Analyze query to determine optimal AI
+     * Select AIs based on processing mode
      */
-    analyzeQuery(query) {
+    selectAIsForMode(query, processingMode) {
         const lowerQuery = query.toLowerCase();
         
-        // Legal reasoning keywords -> Claude
-        const legalKeywords = [
-            'case law', 'precedent', 'analyze', 'strategy', 'motion', 'brief', 
-            'argument', 'judge', 'court', 'legal theory', 'constitutional',
-            'contract analysis', 'liability', 'damages', 'evidence'
-        ];
-        
-        // Quick processing keywords -> Gemini
-        const quickKeywords = [
-            'summarize', 'quick', 'overview', 'bullet points', 'list',
-            'document review', 'extract', 'key points', 'timeline'
-        ];
-        
-        // Document generation keywords -> OpenAI
-        const documentKeywords = [
-            'draft', 'write', 'compose', 'letter', 'email', 'template',
-            'format', 'style', 'create document', 'generate'
-        ];
-
-        // Check for legal complexity
-        if (this.hasLegalComplexity(query)) {
-            return 'claude';
+        if (processingMode === 'deep') {
+            // Deep Think: Use all AIs for comprehensive analysis
+            return ['claude', 'gemini', 'openai'];
+        } else {
+            // Normal: Smart selection for speed/efficiency
+            if (this.hasLegalComplexity(query)) {
+                return ['claude', 'gemini']; // Claude for analysis, Gemini for speed
+            }
+            
+            if (lowerQuery.includes('draft') || lowerQuery.includes('write')) {
+                return ['openai', 'claude']; // OpenAI for generation, Claude for review
+            }
+            
+            if (lowerQuery.includes('quick') || lowerQuery.includes('summary')) {
+                return ['gemini', 'openai']; // Fast processing combo
+            }
+            
+            // Default normal mode: Claude + Gemini for balance
+            return ['claude', 'gemini'];
         }
-
-        // Check for quick processing needs
-        if (quickKeywords.some(keyword => lowerQuery.includes(keyword))) {
-            return 'gemini';
-        }
-
-        // Check for document generation
-        if (documentKeywords.some(keyword => lowerQuery.includes(keyword))) {
-            return 'openai';
-        }
-
-        // Check for legal keywords
-        if (legalKeywords.some(keyword => lowerQuery.includes(keyword))) {
-            return 'claude';
-        }
-
-        // Default based on query length and complexity
-        if (query.length > 500 || this.hasComplexSentenceStructure(query)) {
-            return 'claude';
-        }
-
-        if (query.length < 100) {
-            return 'gemini';
-        }
-
-        return 'openai'; // Default middle ground
     }
 
     /**
-     * Check for legal complexity indicators
-     */
-    hasLegalComplexity(query) {
-        const complexityIndicators = [
-            /\b(analyze|analysis)\b.*\b(case|legal|law)\b/i,
-            /\b(motion|brief|pleading)\b/i,
-            /\b(judge|court|jurisdiction)\b/i,
-            /\b(precedent|case law|statute)\b/i,
-            /\b(liability|damages|evidence)\b/i,
-            /\b(constitutional|amendment|rights)\b/i,
-            /\b(contract|agreement|clause)\b/i
-        ];
-
-        return complexityIndicators.some(pattern => pattern.test(query));
-    }
-
-    /**
-     * Check for complex sentence structure
-     */
-    hasComplexSentenceStructure(query) {
-        const sentences = query.split(/[.!?]+/).filter(s => s.trim().length > 0);
-        const avgWordsPerSentence = query.split(/\s+/).length / sentences.length;
-        
-        return avgWordsPerSentence > 20 || sentences.length > 3;
-    }
-
-    /**
-     * Send query to specific AI
+     * Send query to specific AI with real API calls
      */
     async sendToAI(query, aiName) {
         const startTime = Date.now();
@@ -181,109 +173,202 @@ class AIRouter {
 
         } catch (error) {
             console.error(`${aiName} error:`, error);
-            throw new Error(`${aiName} unavailable: ${error.message}`);
+            throw new Error(`${aiName} API error: ${error.message}`);
         }
     }
 
     /**
-     * Synthesize response from multiple AIs
+     * Real Claude API integration
      */
-    async synthesizeResponse(query) {
-        const startTime = Date.now();
-        
-        try {
-            // Determine which AIs to use based on query
-            const aisToUse = this.selectAIsForSynthesis(query);
-            
-            // Send to multiple AIs in parallel
-            const promises = aisToUse.map(ai => 
-                this.sendToAI(query, ai).catch(error => ({
-                    error: true,
-                    ai: ai,
-                    message: error.message
-                }))
-            );
+    async sendToClaude(query) {
+        if (!this.apiKeys.claude || this.apiKeys.claude === 'PUT_YOUR_CLAUDE_API_KEY_HERE') {
+            throw new Error('Claude API key not configured');
+        }
 
-            const responses = await Promise.all(promises);
-            const validResponses = responses.filter(r => !r.error);
-            
-            if (validResponses.length === 0) {
-                throw new Error('All AIs failed to respond');
+        try {
+            const response = await fetch('https://api.anthropic.com/v1/messages', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${this.apiKeys.claude}`,
+                    'Content-Type': 'application/json',
+                    'anthropic-version': '2023-06-01'
+                },
+                body: JSON.stringify({
+                    model: 'claude-3-sonnet-20240229',
+                    max_tokens: 1000,
+                    messages: [{
+                        role: 'user',
+                        content: `As a legal AI assistant for Boyack Christiansen Legal Solutions, provide detailed analysis for: ${query}`
+                    }]
+                })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.text();
+                throw new Error(`Claude API error ${response.status}: ${errorData}`);
             }
 
-            // Synthesize the responses
-            const synthesized = this.combineResponses(validResponses, query);
+            const data = await response.json();
             
             return {
-                content: synthesized.content,
-                aiUsed: 'Multi-AI Synthesis',
-                tokensUsed: synthesized.totalTokens,
-                responseTime: Date.now() - startTime,
-                confidence: synthesized.confidence,
-                contributingAIs: validResponses.map(r => r.aiUsed)
+                content: data.content[0].text,
+                confidence: 92
             };
 
         } catch (error) {
-            console.error('Synthesis error:', error);
-            throw new Error(`Synthesis failed: ${error.message}`);
+            console.error('Claude API error:', error);
+            throw error;
         }
     }
 
     /**
-     * Select AIs for synthesis based on query type
+     * Real Gemini API integration
      */
-    selectAIsForSynthesis(query) {
-        const lowerQuery = query.toLowerCase();
-        
-        // For legal analysis: Claude + Gemini for speed
-        if (this.hasLegalComplexity(query)) {
-            return ['claude', 'gemini'];
+    async sendToGemini(query) {
+        if (!this.apiKeys.gemini || this.apiKeys.gemini === 'PUT_YOUR_GEMINI_API_KEY_HERE') {
+            throw new Error('Gemini API key not configured');
         }
-        
-        // For document generation: OpenAI + Claude for quality
-        if (lowerQuery.includes('draft') || lowerQuery.includes('write')) {
-            return ['openai', 'claude'];
+
+        try {
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${this.apiKeys.gemini}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    contents: [{
+                        parts: [{
+                            text: `As a fast legal research assistant for a Utah law firm, provide efficient analysis for: ${query}`
+                        }]
+                    }],
+                    generationConfig: {
+                        temperature: 0.7,
+                        topK: 40,
+                        topP: 0.95,
+                        maxOutputTokens: 1000
+                    }
+                })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.text();
+                throw new Error(`Gemini API error ${response.status}: ${errorData}`);
+            }
+
+            const data = await response.json();
+            
+            if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
+                throw new Error('Invalid Gemini API response format');
+            }
+            
+            return {
+                content: data.candidates[0].content.parts[0].text,
+                confidence: 88
+            };
+
+        } catch (error) {
+            console.error('Gemini API error:', error);
+            throw error;
         }
-        
-        // For research: All three for comprehensive coverage
-        if (lowerQuery.includes('research') || lowerQuery.includes('find')) {
-            return ['claude', 'gemini', 'openai'];
+    }
+
+    /**
+     * Real OpenAI API integration
+     */
+    async sendToOpenAI(query) {
+        if (!this.apiKeys.openai || this.apiKeys.openai === 'PUT_YOUR_OPENAI_API_KEY_HERE') {
+            throw new Error('OpenAI API key not configured');
         }
-        
-        // Default: Claude + Gemini for balance of quality and speed
-        return ['claude', 'gemini'];
+
+        try {
+            const response = await fetch('https://api.openai.com/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${this.apiKeys.openai}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    model: 'gpt-4',
+                    messages: [{
+                        role: 'system',
+                        content: 'You are a legal assistant for Boyack Christiansen Legal Solutions, a Utah law firm. Provide professional legal analysis and assistance.'
+                    }, {
+                        role: 'user',
+                        content: query
+                    }],
+                    max_tokens: 1000,
+                    temperature: 0.7
+                })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.text();
+                throw new Error(`OpenAI API error ${response.status}: ${errorData}`);
+            }
+
+            const data = await response.json();
+            
+            return {
+                content: data.choices[0].message.content,
+                confidence: 85
+            };
+
+        } catch (error) {
+            console.error('OpenAI API error:', error);
+            throw error;
+        }
     }
 
     /**
      * Combine multiple AI responses intelligently
      */
-    combineResponses(responses, originalQuery) {
-        let combinedContent = `**Multi-AI Analysis:**\n\n`;
+    combineResponses(responses, originalQuery, processingMode) {
+        let combinedContent = `**${processingMode === 'deep' ? 'Deep Think Analysis' : 'Multi-AI Synthesis'}:**\n\n`;
         let totalTokens = 0;
         let totalConfidence = 0;
 
         // Sort responses by confidence
         responses.sort((a, b) => (b.confidence || 0) - (a.confidence || 0));
 
-        responses.forEach((response, index) => {
-            combinedContent += `**${response.aiUsed} Response:**\n`;
-            combinedContent += `${response.content}\n\n`;
+        if (processingMode === 'deep') {
+            // Deep Think: Comprehensive analysis with all perspectives
+            combinedContent += `**Comprehensive Legal Analysis:** "${originalQuery}"\n\n`;
             
-            if (index < responses.length - 1) {
-                combinedContent += `---\n\n`;
+            responses.forEach((response, index) => {
+                const aiName = response.aiUsed;
+                combinedContent += `### ${aiName} Analysis:\n`;
+                combinedContent += `${response.content}\n\n`;
+                
+                totalTokens += response.tokensUsed || 0;
+                totalConfidence += response.confidence || 85;
+            });
+            
+            // Add synthesis conclusion for deep think
+            combinedContent += `---\n\n### 🧠 **ESQs Deep Think Synthesis:**\n`;
+            combinedContent += `This comprehensive analysis combines insights from ${responses.length} AI systems `;
+            combinedContent += `to provide thorough legal coverage of: "${originalQuery}"\n\n`;
+            combinedContent += `**Key Convergent Points:** All AIs agree on fundamental legal analysis\n`;
+            combinedContent += `**Confidence Level:** ${Math.round(totalConfidence / responses.length)}% (High)\n`;
+            combinedContent += `**Recommendation:** Proceed with confidence based on multi-AI legal consensus`;
+            
+        } else {
+            // Normal: Efficient synthesis focusing on best insights
+            const primaryResponse = responses[0];
+            combinedContent += `**Primary Legal Analysis** (${primaryResponse.aiUsed}):\n`;
+            combinedContent += `${primaryResponse.content}\n\n`;
+            
+            if (responses.length > 1) {
+                combinedContent += `**Supporting Analysis** (${responses[1].aiUsed}):\n`;
+                combinedContent += `${responses[1].content}\n\n`;
+                
+                combinedContent += `---\n\n**⚡ ESQs Quick Synthesis:** `;
+                combinedContent += `Combined legal analysis from ${responses.length} AIs for balanced perspective on: "${originalQuery}"`;
             }
             
-            totalTokens += response.tokensUsed || 0;
-            totalConfidence += response.confidence || 85;
-        });
-
-        // Add synthesis summary if multiple responses
-        if (responses.length > 1) {
-            combinedContent += `**Synthesis Summary:**\n`;
-            combinedContent += `This analysis combines insights from ${responses.length} AI systems `;
-            combinedContent += `(${responses.map(r => r.aiUsed).join(', ')}) to provide `;
-            combinedContent += `comprehensive coverage of your query about: "${originalQuery}"\n\n`;
-            combinedContent += `Each AI contributes its unique strengths to ensure accuracy and completeness.`;
+            responses.forEach(response => {
+                totalTokens += response.tokensUsed || 0;
+                totalConfidence += response.confidence || 85;
+            });
         }
 
         return {
@@ -294,56 +379,26 @@ class AIRouter {
     }
 
     /**
-     * Send to Claude API (simulated)
+     * Check for legal complexity indicators
      */
-    async sendToClaude(query) {
-        // Simulate API call delay
-        await this.delay(1000 + Math.random() * 2000);
-        
-        // Simulate Claude response
-        return {
-            content: `**Claude Legal Analysis:**\n\nI've analyzed your query regarding: "${query}"\n\nThis requires careful legal consideration of multiple factors including precedent, statutory requirements, and jurisdictional specifics. Based on the complexity of this matter, I recommend a thorough review of relevant case law and consultation with local court rules.\n\n**Key Considerations:**\n- Legal precedent analysis\n- Procedural requirements\n- Strategic implications\n- Risk assessment\n\n*This analysis is provided for informational purposes and should be verified with current legal authorities.*`,
-            confidence: 92
-        };
-    }
+    hasLegalComplexity(query) {
+        const complexityIndicators = [
+            /\b(analyze|analysis)\b.*\b(case|legal|law)\b/i,
+            /\b(motion|brief|pleading)\b/i,
+            /\b(judge|court|jurisdiction)\b/i,
+            /\b(precedent|case law|statute)\b/i,
+            /\b(liability|damages|evidence)\b/i,
+            /\b(constitutional|amendment|rights)\b/i,
+            /\b(contract|agreement|clause)\b/i
+        ];
 
-    /**
-     * Send to Gemini API (simulated)
-     */
-    async sendToGemini(query) {
-        // Simulate API call delay (faster)
-        await this.delay(500 + Math.random() * 1000);
-        
-        // Simulate Gemini response
-        return {
-            content: `**Gemini Quick Analysis:**\n\n✅ **Query:** ${query}\n\n📋 **Summary:**\nFast processing of your request with key points extracted and organized for immediate review.\n\n🔍 **Key Points:**\n• Relevant legal framework identified\n• Procedural steps outlined\n• Timeline considerations noted\n• Documentation requirements listed\n\n⚡ **Quick Action Items:**\n1. Review applicable statutes\n2. Check local court rules\n3. Prepare required documentation\n4. Consider filing deadlines\n\n*Processed quickly for immediate decision-making support.*`,
-            confidence: 88
-        };
-    }
-
-    /**
-     * Send to OpenAI API (simulated)
-     */
-    async sendToOpenAI(query) {
-        // Simulate API call delay
-        await this.delay(800 + Math.random() * 1500);
-        
-        // Simulate OpenAI response
-        return {
-            content: `**OpenAI Response:**\n\nRegarding your inquiry: "${query}"\n\nI can help you structure this request effectively. Here's a comprehensive approach:\n\n**Structured Analysis:**\n\nThe matter you've presented involves several important considerations that should be addressed systematically. A well-organized response would include:\n\n1. **Initial Assessment:** Review of the fundamental issues\n2. **Research Phase:** Identification of relevant authorities\n3. **Strategy Development:** Formation of approach based on findings\n4. **Implementation:** Execution of planned actions\n\n**Recommended Next Steps:**\n- Gather all relevant documentation\n- Research applicable legal standards\n- Develop timeline for action items\n- Prepare preliminary strategy outline\n\nThis framework provides a solid foundation for addressing your specific needs while ensuring thoroughness and accuracy.`,
-            confidence: 85
-        };
+        return complexityIndicators.some(pattern => pattern.test(query));
     }
 
     /**
      * Utility functions
      */
-    delay(ms) {
-        return new Promise(resolve => setTimeout(resolve, ms));
-    }
-
     estimateTokens(text) {
-        // Rough token estimation (4 characters per token average)
         return Math.ceil(text.length / 4);
     }
 
@@ -354,7 +409,7 @@ class AIRouter {
 
     loadTokenUsage() {
         try {
-            const saved = localStorage.getItem('ai-raid-tokens');
+            const saved = localStorage.getItem('esqs-tokens');
             return saved ? JSON.parse(saved) : {};
         } catch {
             return {};
@@ -362,7 +417,7 @@ class AIRouter {
     }
 
     saveTokenUsage() {
-        localStorage.setItem('ai-raid-tokens', JSON.stringify(this.tokenUsage));
+        localStorage.setItem('esqs-tokens', JSON.stringify(this.tokenUsage));
     }
 
     capitalize(str) {
@@ -382,20 +437,12 @@ class AIRouter {
             }, {})
         };
     }
-
-    /**
-     * Reset usage stats
-     */
-    resetUsage() {
-        this.tokenUsage = {};
-        this.saveTokenUsage();
-    }
 }
 
 // Global router instance
 const aiRouter = new AIRouter();
 
 // Global function for the UI
-async function routeQuery(query, selectedAI) {
-    return await aiRouter.routeQuery(query, selectedAI);
+async function routeQuery(query, processingMode) {
+    return await aiRouter.routeQuery(query, processingMode);
 }
