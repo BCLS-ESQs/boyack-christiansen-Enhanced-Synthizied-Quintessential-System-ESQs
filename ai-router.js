@@ -1,143 +1,192 @@
 /**
- * AI Router - Real API Integration for ESQs
- * Routes queries to actual Claude, Gemini, and OpenAI APIs
+ * AI Router - REAL API CONNECTIONS
+ * Securely connects to Claude, OpenAI, and Gemini APIs
  */
 
 class AIRouter {
     constructor() {
-        // 🔑 PUT YOUR ACTUAL API KEYS HERE:
+        // 🔒 SECURE - Load from environment variables
         this.apiKeys = {
-            claude: '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',      // sk-ant-api03-...
-            gemini: 'AIzaSyDkYmUUnT3Q2UIHVQtqLepyR7q1pMuVlnU',      // AIzaSyD_...
-            openai: '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'       // sk-proj-...
+            claude: this.getEnvVar('CLAUDE_API_KEY'),
+            gemini: this.getEnvVar('GEMINI_API_KEY'), 
+            openai: this.getEnvVar('OPENAI_API_KEY')
         };
         
-        this.tokenLimits = {
-            claude: 200000,
-            gemini: 100000,
-            openai: 150000,
-            synthesis: 300000
+        this.apiEndpoints = {
+            claude: 'https://api.anthropic.com/v1/messages',
+            gemini: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent',
+            openai: 'https://api.openai.com/v1/chat/completions'
         };
         
         this.tokenUsage = this.loadTokenUsage();
-        
-        this.aiCapabilities = {
-            claude: {
-                strengths: ['legal reasoning', 'case analysis', 'complex logic', 'strategy'],
-                speed: 'medium',
-                cost: 'high',
-                quality: 'highest'
-            },
-            gemini: {
-                strengths: ['document processing', 'quick summaries', 'google integration', 'fast queries'],
-                speed: 'fast',
-                cost: 'low',
-                quality: 'good'
-            },
-            openai: {
-                strengths: ['document generation', 'creative writing', 'general tasks', 'code'],
-                speed: 'medium',
-                cost: 'medium',
-                quality: 'high'
-            }
-        };
-        
-        console.log('🤖 ESQs AI Router initialized with real APIs');
+        console.log('🔑 API Router initialized with secure keys');
     }
 
     /**
-     * Route query with mandatory synthesis
+     * Get environment variable securely
      */
-    async routeQuery(query, processingMode = 'normal') {
-        try {
-            return await this.synthesizeResponse(query, processingMode);
-        } catch (error) {
-            console.error('AI routing error:', error);
-            throw new Error(`ESQs synthesis failed: ${error.message}`);
+    getEnvVar(name) {
+        // Node.js environment
+        if (typeof process !== 'undefined' && process.env) {
+            return process.env[name];
         }
+        
+        // Browser environment (development only!)
+        if (typeof window !== 'undefined' && window.ENV_VARS) {
+            return window.ENV_VARS[name];
+        }
+        
+        console.warn(`⚠️ ${name} not found in environment variables`);
+        return null;
     }
 
     /**
-     * Synthesize response from multiple AIs with processing mode
+     * 🤖 REAL OpenAI API Connection
      */
-    async synthesizeResponse(query, processingMode = 'normal') {
-        const startTime = Date.now();
-        
-        try {
-            // Determine AIs to use based on processing mode
-            const aisToUse = this.selectAIsForMode(query, processingMode);
-            
-            console.log(`🧠 ESQs ${processingMode} mode: Using ${aisToUse.join(', ')}`);
-            
-            // Send to multiple AIs in parallel
-            const promises = aisToUse.map(ai => 
-                this.sendToAI(query, ai).catch(error => ({
-                    error: true,
-                    ai: ai,
-                    message: error.message,
-                    content: `${ai} temporarily unavailable: ${error.message}`
-                }))
-            );
+    async sendToOpenAI(query) {
+        if (!this.apiKeys.openai) {
+            throw new Error('OpenAI API key not configured');
+        }
 
-            const responses = await Promise.all(promises);
-            const validResponses = responses.filter(r => !r.error);
-            
-            if (validResponses.length === 0) {
-                // If all AIs fail, return error info
-                const errorSummary = responses.map(r => `${r.ai}: ${r.message}`).join('; ');
-                throw new Error(`All AIs failed: ${errorSummary}`);
+        try {
+            const response = await fetch(this.apiEndpoints.openai, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${this.apiKeys.openai}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    model: 'gpt-4o',  // Latest model
+                    messages: [
+                        {
+                            role: 'system',
+                            content: 'You are a legal AI assistant specializing in case analysis, document drafting, and legal research. Provide thorough, professional responses with proper legal context.'
+                        },
+                        {
+                            role: 'user', 
+                            content: query
+                        }
+                    ],
+                    max_tokens: 1000,
+                    temperature: 0.7
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`OpenAI API error: ${response.status} ${response.statusText}`);
             }
 
-            // Synthesize the responses
-            const synthesized = this.combineResponses(validResponses, query, processingMode);
+            const data = await response.json();
             
             return {
-                content: synthesized.content,
-                aiUsed: `${processingMode === 'deep' ? 'Deep Think' : 'Normal'} Synthesis`,
-                tokensUsed: synthesized.totalTokens,
-                responseTime: Date.now() - startTime,
-                confidence: synthesized.confidence,
-                contributingAIs: validResponses.map(r => r.aiUsed),
-                processingMode: processingMode,
-                errors: responses.filter(r => r.error)
+                content: `**OpenAI Legal Analysis:**\n\n${data.choices[0].message.content}`,
+                confidence: 85,
+                tokensUsed: data.usage?.total_tokens || 0
             };
 
         } catch (error) {
-            console.error('Synthesis error:', error);
-            throw new Error(`ESQs synthesis failed: ${error.message}`);
+            console.error('OpenAI API Error:', error);
+            throw new Error(`OpenAI request failed: ${error.message}`);
         }
     }
 
     /**
-     * Select AIs based on processing mode
+     * 🧠 REAL Claude API Connection  
      */
-    selectAIsForMode(query, processingMode) {
-        const lowerQuery = query.toLowerCase();
-        
-        if (processingMode === 'deep') {
-            // Deep Think: Use all AIs for comprehensive analysis
-            return ['claude', 'gemini', 'openai'];
-        } else {
-            // Normal: Smart selection for speed/efficiency
-            if (this.hasLegalComplexity(query)) {
-                return ['claude', 'gemini']; // Claude for analysis, Gemini for speed
+    async sendToClaude(query) {
+        if (!this.apiKeys.claude) {
+            throw new Error('Claude API key not configured');
+        }
+
+        try {
+            const response = await fetch(this.apiEndpoints.claude, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${this.apiKeys.claude}`,
+                    'Content-Type': 'application/json',
+                    'anthropic-version': '2023-06-01'
+                },
+                body: JSON.stringify({
+                    model: 'claude-3-sonnet-20240229',
+                    max_tokens: 1000,
+                    messages: [
+                        {
+                            role: 'user',
+                            content: `As a legal AI assistant, please analyze this query with detailed legal reasoning: ${query}`
+                        }
+                    ]
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`Claude API error: ${response.status} ${response.statusText}`);
             }
+
+            const data = await response.json();
             
-            if (lowerQuery.includes('draft') || lowerQuery.includes('write')) {
-                return ['openai', 'claude']; // OpenAI for generation, Claude for review
-            }
-            
-            if (lowerQuery.includes('quick') || lowerQuery.includes('summary')) {
-                return ['gemini', 'openai']; // Fast processing combo
-            }
-            
-            // Default normal mode: Claude + Gemini for balance
-            return ['claude', 'gemini'];
+            return {
+                content: `**Claude Legal Analysis:**\n\n${data.content[0].text}`,
+                confidence: 92,
+                tokensUsed: data.usage?.input_tokens + data.usage?.output_tokens || 0
+            };
+
+        } catch (error) {
+            console.error('Claude API Error:', error);
+            throw new Error(`Claude request failed: ${error.message}`);
         }
     }
 
     /**
-     * Send query to specific AI with real API calls
+     * ⚡ REAL Gemini API Connection
+     */
+    async sendToGemini(query) {
+        if (!this.apiKeys.gemini) {
+            throw new Error('Gemini API key not configured');
+        }
+
+        try {
+            const response = await fetch(`${this.apiEndpoints.gemini}?key=${this.apiKeys.gemini}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    contents: [
+                        {
+                            parts: [
+                                {
+                                    text: `As a legal AI assistant, provide quick analysis for: ${query}`
+                                }
+                            ]
+                        }
+                    ],
+                    generationConfig: {
+                        temperature: 0.7,
+                        maxOutputTokens: 1000
+                    }
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`Gemini API error: ${response.status} ${response.statusText}`);
+            }
+
+            const data = await response.json();
+            
+            return {
+                content: `**Gemini Quick Analysis:**\n\n${data.candidates[0].content.parts[0].text}`,
+                confidence: 88,
+                tokensUsed: data.usageMetadata?.totalTokenCount || 0
+            };
+
+        } catch (error) {
+            console.error('Gemini API Error:', error);
+            throw new Error(`Gemini request failed: ${error.message}`);
+        }
+    }
+
+    /**
+     * Send query to specific AI with error handling
      */
     async sendToAI(query, aiName) {
         const startTime = Date.now();
@@ -160,215 +209,140 @@ class AIRouter {
             }
 
             // Track usage
-            const tokensUsed = this.estimateTokens(query + response.content);
-            this.updateTokenUsage(aiName, tokensUsed);
+            this.updateTokenUsage(aiName, response.tokensUsed);
 
             return {
                 content: response.content,
                 aiUsed: this.capitalize(aiName),
-                tokensUsed: tokensUsed,
+                tokensUsed: response.tokensUsed,
                 responseTime: Date.now() - startTime,
                 confidence: response.confidence || 85
             };
 
         } catch (error) {
             console.error(`${aiName} error:`, error);
-            throw new Error(`${aiName} API error: ${error.message}`);
+            
+            // Return fallback response instead of crashing
+            return {
+                content: `⚠️ **${this.capitalize(aiName)} Unavailable**\n\nAPI connection failed: ${error.message}\n\nPlease check your API key configuration.`,
+                aiUsed: `${this.capitalize(aiName)} (Error)`,
+                tokensUsed: 0,
+                responseTime: Date.now() - startTime,
+                confidence: 0,
+                error: true
+            };
         }
     }
 
     /**
-     * Real Claude API integration
+     * Route query with mandatory synthesis
      */
-    async sendToClaude(query) {
-        if (!this.apiKeys.claude || this.apiKeys.claude === 'PUT_YOUR_CLAUDE_API_KEY_HERE') {
-            throw new Error('Claude API key not configured');
-        }
-
+    async routeQuery(query, processingMode = 'normal') {
         try {
-            const response = await fetch('https://api.anthropic.com/v1/messages', {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${this.apiKeys.claude}`,
-                    'Content-Type': 'application/json',
-                    'anthropic-version': '2023-06-01'
-                },
-                body: JSON.stringify({
-                    model: 'claude-3-sonnet-20240229',
-                    max_tokens: 1000,
-                    messages: [{
-                        role: 'user',
-                        content: `As a legal AI assistant for Boyack Christiansen Legal Solutions, provide detailed analysis for: ${query}`
-                    }]
-                })
-            });
+            return await this.synthesizeResponse(query, processingMode);
+        } catch (error) {
+            console.error('Routing error:', error);
+            throw new Error(`AI synthesis failed: ${error.message}`);
+        }
+    }
 
-            if (!response.ok) {
-                const errorData = await response.text();
-                throw new Error(`Claude API error ${response.status}: ${errorData}`);
+    /**
+     * Synthesize response from multiple AIs
+     */
+    async synthesizeResponse(query, processingMode = 'normal') {
+        const startTime = Date.now();
+        
+        try {
+            const aisToUse = this.selectAIsForMode(query, processingMode);
+            
+            // Send to multiple AIs in parallel
+            const promises = aisToUse.map(ai => this.sendToAI(query, ai));
+            const responses = await Promise.all(promises);
+            
+            // Filter out error responses for synthesis
+            const validResponses = responses.filter(r => !r.error);
+            
+            if (validResponses.length === 0) {
+                return {
+                    content: `❌ **All AIs Unavailable**\n\nAll API connections failed. Please check:\n• API keys are correctly set\n• Internet connection\n• API quotas/billing`,
+                    aiUsed: 'ESQs System Error',
+                    tokensUsed: 0,
+                    error: true
+                };
             }
 
-            const data = await response.json();
+            // Synthesize available responses
+            const synthesized = this.combineResponses(validResponses, query, processingMode);
             
             return {
-                content: data.content[0].text,
-                confidence: 92
+                content: synthesized.content,
+                aiUsed: `${processingMode === 'deep' ? 'Deep Think' : 'Normal'} Synthesis`,
+                tokensUsed: synthesized.totalTokens,
+                responseTime: Date.now() - startTime,
+                confidence: synthesized.confidence,
+                contributingAIs: validResponses.map(r => r.aiUsed),
+                processingMode: processingMode
             };
 
         } catch (error) {
-            console.error('Claude API error:', error);
-            throw error;
+            console.error('Synthesis error:', error);
+            throw new Error(`Synthesis failed: ${error.message}`);
         }
     }
 
     /**
-     * Real Gemini API integration
+     * Select AIs based on processing mode
      */
-    async sendToGemini(query) {
-        if (!this.apiKeys.gemini || this.apiKeys.gemini === 'PUT_YOUR_GEMINI_API_KEY_HERE') {
-            throw new Error('Gemini API key not configured');
-        }
-
-        try {
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${this.apiKeys.gemini}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    contents: [{
-                        parts: [{
-                            text: `As a fast legal research assistant for a Utah law firm, provide efficient analysis for: ${query}`
-                        }]
-                    }],
-                    generationConfig: {
-                        temperature: 0.7,
-                        topK: 40,
-                        topP: 0.95,
-                        maxOutputTokens: 1000
-                    }
-                })
-            });
-
-            if (!response.ok) {
-                const errorData = await response.text();
-                throw new Error(`Gemini API error ${response.status}: ${errorData}`);
+    selectAIsForMode(query, processingMode) {
+        if (processingMode === 'deep') {
+            return ['claude', 'gemini', 'openai']; // All AIs for deep think
+        } else {
+            // Smart selection for normal mode
+            if (this.hasLegalComplexity(query)) {
+                return ['claude', 'gemini']; // Legal focus
             }
-
-            const data = await response.json();
-            
-            if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
-                throw new Error('Invalid Gemini API response format');
+            if (query.toLowerCase().includes('draft') || query.toLowerCase().includes('write')) {
+                return ['openai', 'claude']; // Generation focus
             }
-            
-            return {
-                content: data.candidates[0].content.parts[0].text,
-                confidence: 88
-            };
-
-        } catch (error) {
-            console.error('Gemini API error:', error);
-            throw error;
+            return ['claude', 'gemini']; // Default balanced
         }
     }
 
     /**
-     * Real OpenAI API integration
+     * Check for legal complexity
      */
-    async sendToOpenAI(query) {
-        if (!this.apiKeys.openai || this.apiKeys.openai === 'PUT_YOUR_OPENAI_API_KEY_HERE') {
-            throw new Error('OpenAI API key not configured');
-        }
-
-        try {
-            const response = await fetch('https://api.openai.com/v1/chat/completions', {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${this.apiKeys.openai}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    model: 'gpt-4',
-                    messages: [{
-                        role: 'system',
-                        content: 'You are a legal assistant for Boyack Christiansen Legal Solutions, a Utah law firm. Provide professional legal analysis and assistance.'
-                    }, {
-                        role: 'user',
-                        content: query
-                    }],
-                    max_tokens: 1000,
-                    temperature: 0.7
-                })
-            });
-
-            if (!response.ok) {
-                const errorData = await response.text();
-                throw new Error(`OpenAI API error ${response.status}: ${errorData}`);
-            }
-
-            const data = await response.json();
-            
-            return {
-                content: data.choices[0].message.content,
-                confidence: 85
-            };
-
-        } catch (error) {
-            console.error('OpenAI API error:', error);
-            throw error;
-        }
+    hasLegalComplexity(query) {
+        const legalKeywords = [
+            'case law', 'precedent', 'motion', 'brief', 'court', 'judge',
+            'statute', 'contract', 'liability', 'analysis', 'legal'
+        ];
+        
+        const lowerQuery = query.toLowerCase();
+        return legalKeywords.some(keyword => lowerQuery.includes(keyword));
     }
 
     /**
-     * Combine multiple AI responses intelligently
+     * Combine multiple AI responses
      */
     combineResponses(responses, originalQuery, processingMode) {
         let combinedContent = `**${processingMode === 'deep' ? 'Deep Think Analysis' : 'Multi-AI Synthesis'}:**\n\n`;
         let totalTokens = 0;
         let totalConfidence = 0;
 
-        // Sort responses by confidence
-        responses.sort((a, b) => (b.confidence || 0) - (a.confidence || 0));
-
+        responses.forEach((response, index) => {
+            const aiName = response.aiUsed;
+            combinedContent += `### ${aiName} Analysis:\n`;
+            combinedContent += `${response.content}\n\n`;
+            
+            totalTokens += response.tokensUsed || 0;
+            totalConfidence += response.confidence || 85;
+        });
+        
         if (processingMode === 'deep') {
-            // Deep Think: Comprehensive analysis with all perspectives
-            combinedContent += `**Comprehensive Legal Analysis:** "${originalQuery}"\n\n`;
-            
-            responses.forEach((response, index) => {
-                const aiName = response.aiUsed;
-                combinedContent += `### ${aiName} Analysis:\n`;
-                combinedContent += `${response.content}\n\n`;
-                
-                totalTokens += response.tokensUsed || 0;
-                totalConfidence += response.confidence || 85;
-            });
-            
-            // Add synthesis conclusion for deep think
-            combinedContent += `---\n\n### 🧠 **ESQs Deep Think Synthesis:**\n`;
-            combinedContent += `This comprehensive analysis combines insights from ${responses.length} AI systems `;
-            combinedContent += `to provide thorough legal coverage of: "${originalQuery}"\n\n`;
-            combinedContent += `**Key Convergent Points:** All AIs agree on fundamental legal analysis\n`;
-            combinedContent += `**Confidence Level:** ${Math.round(totalConfidence / responses.length)}% (High)\n`;
-            combinedContent += `**Recommendation:** Proceed with confidence based on multi-AI legal consensus`;
-            
-        } else {
-            // Normal: Efficient synthesis focusing on best insights
-            const primaryResponse = responses[0];
-            combinedContent += `**Primary Legal Analysis** (${primaryResponse.aiUsed}):\n`;
-            combinedContent += `${primaryResponse.content}\n\n`;
-            
-            if (responses.length > 1) {
-                combinedContent += `**Supporting Analysis** (${responses[1].aiUsed}):\n`;
-                combinedContent += `${responses[1].content}\n\n`;
-                
-                combinedContent += `---\n\n**⚡ ESQs Quick Synthesis:** `;
-                combinedContent += `Combined legal analysis from ${responses.length} AIs for balanced perspective on: "${originalQuery}"`;
-            }
-            
-            responses.forEach(response => {
-                totalTokens += response.tokensUsed || 0;
-                totalConfidence += response.confidence || 85;
-            });
+            combinedContent += `---\n\n### 🧠 **ESQs Synthesis:**\n`;
+            combinedContent += `Comprehensive analysis from ${responses.length} AI systems for: "${originalQuery}"\n\n`;
+            combinedContent += `**Confidence Level:** ${Math.round(totalConfidence / responses.length)}%\n`;
+            combinedContent += `**Total Tokens:** ${totalTokens}`;
         }
 
         return {
@@ -378,28 +352,9 @@ class AIRouter {
         };
     }
 
-    /**
-     * Check for legal complexity indicators
-     */
-    hasLegalComplexity(query) {
-        const complexityIndicators = [
-            /\b(analyze|analysis)\b.*\b(case|legal|law)\b/i,
-            /\b(motion|brief|pleading)\b/i,
-            /\b(judge|court|jurisdiction)\b/i,
-            /\b(precedent|case law|statute)\b/i,
-            /\b(liability|damages|evidence)\b/i,
-            /\b(constitutional|amendment|rights)\b/i,
-            /\b(contract|agreement|clause)\b/i
-        ];
-
-        return complexityIndicators.some(pattern => pattern.test(query));
-    }
-
-    /**
-     * Utility functions
-     */
-    estimateTokens(text) {
-        return Math.ceil(text.length / 4);
+    // Utility methods
+    capitalize(str) {
+        return str.charAt(0).toUpperCase() + str.slice(1);
     }
 
     updateTokenUsage(ai, tokens) {
@@ -409,7 +364,7 @@ class AIRouter {
 
     loadTokenUsage() {
         try {
-            const saved = localStorage.getItem('esqs-tokens');
+            const saved = localStorage.getItem('esqs-token-usage');
             return saved ? JSON.parse(saved) : {};
         } catch {
             return {};
@@ -417,26 +372,19 @@ class AIRouter {
     }
 
     saveTokenUsage() {
-        localStorage.setItem('esqs-tokens', JSON.stringify(this.tokenUsage));
+        localStorage.setItem('esqs-token-usage', JSON.stringify(this.tokenUsage));
     }
+}
 
-    capitalize(str) {
-        return str.charAt(0).toUpperCase() + str.slice(1);
-    }
-
-    /**
-     * Get usage statistics
-     */
-    getUsageStats() {
-        return {
-            tokenUsage: this.tokenUsage,
-            limits: this.tokenLimits,
-            percentUsed: Object.keys(this.tokenLimits).reduce((acc, ai) => {
-                acc[ai] = Math.round(((this.tokenUsage[ai] || 0) / this.tokenLimits[ai]) * 100);
-                return acc;
-            }, {})
-        };
-    }
+// 🔒 For browser development ONLY - NEVER commit real keys!
+if (typeof window !== 'undefined') {
+    // Set your keys here for local testing:
+    window.ENV_VARS = {
+        // Uncomment and add your keys for local testing:
+        // OPENAI_API_KEY: 'sk-proj-your-key-here',
+        // CLAUDE_API_KEY: 'sk-ant-api03-your-key-here', 
+        // GEMINI_API_KEY: 'AIza-your-key-here'
+    };
 }
 
 // Global router instance
