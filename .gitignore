@@ -1,6 +1,4 @@
-# Add the security fixes to .gitignore
-echo "
-# 🔒 SECURITY FILES - NEVER COMMIT!
+# 🔒 SECURITY - NEVER COMMIT THESE FILES!
 .env
 .env.local
 .env.production
@@ -8,9 +6,7 @@ echo "
 api-keys.txt
 config.json
 secrets.json
-" >> .gitignore
-
-# Clean up and commit
-git add .gitignore
-git commit -m "🔒 SECURITY: Add .gitignore to prevent future API key leaks"
-git push
+openai-key.txt
+claude-key.txt
+gemini-key.txt
+node_modules/
