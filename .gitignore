@@ -1,0 +1,16 @@
+# Add the security fixes to .gitignore
+echo "
+# 🔒 SECURITY FILES - NEVER COMMIT!
+.env
+.env.local
+.env.production
+*.key
+api-keys.txt
+config.json
+secrets.json
+" >> .gitignore
+
+# Clean up and commit
+git add .gitignore
+git commit -m "🔒 SECURITY: Add .gitignore to prevent future API key leaks"
+git push
