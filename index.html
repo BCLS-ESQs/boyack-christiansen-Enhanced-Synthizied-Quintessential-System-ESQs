@@ -716,6 +716,7 @@
                     <button class="action-btn" onclick="startBilling()">💰 Billing Summary</button>
                     <button class="action-btn" onclick="searchArchive()">📁 Archive Search</button>
                     <button class="action-btn" onclick="judgeIntel()">⚖️ Judge Intel</button>
+                    <button class="action-btn" onclick="showDecisInfo()">📊 Decisis API Info</button>
                     <button class="action-btn" onclick="draftDocument()">📝 Draft Document</button>
                     <button class="action-btn" onclick="researchCase()">🔍 Legal Research</button>
                     <button class="action-btn" onclick="endSession()">🏁 End Session</button>
@@ -1530,6 +1531,46 @@
         function judgeIntel() {
             addMessage("Requesting judicial intelligence...", 'user');
             showCynthiaResponse("Judge John J. Walton (Fifth Judicial District Court, Washington County): Procedural strictness: 85%. Requires exact Rule 7 compliance and has zero tolerance for procedural errors. Strictly enforces filing deadlines. Recommendation: Ensure all filings are meticulously formatted and submitted early.");
+        }
+
+        function showDecisInfo() {
+            addMessage("Tell me about Decisis API by Lexis", 'user');
+            
+            const decisInfo = `**Decisis by LexisNexis - Legal Analytics Platform**
+
+**What is Decisis?**
+Decisis is LexisNexis's advanced legal analytics platform that provides data-driven insights for strategic legal decision-making. It combines traditional legal research with predictive analytics to help attorneys understand judge behavior, predict case outcomes, and optimize litigation strategies.
+
+**Key Features:**
+• **Judicial Analytics** - Track judges' ruling patterns, preferences, and behavioral trends
+• **Case Outcome Predictions** - Statistical predictions based on historical data and similar cases  
+• **Motion Success Rates** - Historical success rates for different motion types by judge and court
+• **Settlement Analysis** - Settlement likelihood and value predictions
+• **Court Performance Metrics** - Processing times, backlogs, and efficiency data
+• **Attorney Analytics** - Track record analysis for opposing counsel
+
+**How to Get Access:**
+1. **Contact LexisNexis Sales**: Visit https://www.lexisnexis.com/en-us/products/legal-analytics.page
+2. **Enterprise Subscription Required**: Decisis requires an enterprise-level LexisNexis subscription
+3. **API Credentials**: Request API access through LexisNexis Developer Portal
+4. **Authentication Setup**: OAuth 2.0 configuration with Client ID, Secret, and API Key
+
+**Pricing:**
+• Solo/Small Firm: $200-500/month per user (contact for exact pricing)
+• Medium/Large Firms: Volume discounts available
+• Enterprise: Custom pricing based on firm size and usage
+
+**ESQs Integration:**
+✅ Built-in Decisis support when you have API access
+✅ Enhanced judicial intelligence with predictive analytics
+✅ Strategic recommendations based on historical data
+✅ Seamless fallback when Decisis access is not available
+
+**Current Status:** Decisis Access Not Configured - Contact LexisNexis for Enterprise Subscription
+
+Would you like me to help you contact LexisNexis for Decisis access, or do you have other questions about legal analytics?`;
+
+            showCynthiaResponse(decisInfo);
         }
 
         function draftDocument() {
