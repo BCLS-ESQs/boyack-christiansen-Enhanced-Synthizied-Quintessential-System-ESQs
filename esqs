@@ -1,0 +1,119 @@
+#!/usr/bin/env python3
+"""
+ESQs CLI Error Handler
+Redirects users who try to run ESQs as a command-line tool to the proper PWA access methods
+"""
+
+import sys
+import os
+import subprocess
+import platform
+
+def show_esqs_branding():
+    print("\n" + "="*70)
+    print("███████╗ ███████╗ ██████╗  ███████╗")
+    print("██╔════╝ ██╔════╝██╔═══██╗ ██╔════╝")
+    print("█████╗   ███████╗██║   ██║ ███████╗")
+    print("██╔══╝   ╚════██║██║▄▄ ██║ ╚════██║")
+    print("███████╗ ███████║╚██████╔╝ ███████║")
+    print("╚══════╝ ╚══════╝ ╚══▀▀═╝  ╚══════╝")
+    print("\nEnhanced Synthesized Quintessential System")
+    print("Legal Intelligence Platform")
+    print("="*70)
+
+def show_cli_error():
+    print("\n❌ ERROR: ESQs is NOT a Command-Line Tool!")
+    print("\n🌐 ESQs is a Progressive Web App (PWA) that runs in your browser.")
+    print("   It provides a visual interface for legal intelligence work.")
+
+def show_correct_access_methods():
+    print("\n✅ CORRECT ACCESS METHODS:")
+    print("\n1. 🚀 LAUNCHER SCRIPTS (Recommended):")
+    
+    system = platform.system().lower()
+    if system == "windows":
+        print("   • launch-esqs.bat --local    (Command Prompt)")
+        print("   • .\\launch-esqs.ps1 -Local   (PowerShell)")
+    else:
+        print("   • ./launch-esqs.sh --local   (Local development)")
+        print("   • ./launch-esqs.sh --web     (Online version)")
+    
+    print("\n2. 🌐 DIRECT WEB ACCESS:")
+    print("   • https://bcls-esqs.github.io/boyack-christiansen-Enhanced-Synthizied-Quintessential-System-ESQs/")
+    
+    print("\n3. 📱 PWA INSTALLATION:")
+    print("   • Open ESQs in browser → Click install icon (⊕) → Install as app")
+    
+    print("\n4. 🧪 INTEGRATION TESTING:")
+    if system == "windows":
+        print("   • launch-esqs.bat --test")
+    else:
+        print("   • ./launch-esqs.sh --test")
+
+def show_help():
+    print("\n📖 HELP & DOCUMENTATION:")
+    print("   • Setup Guide: ./SETUP.md")
+    print("   • Integration Testing: Built-in test suite")
+    print("   • Synthia AI: Available in web interface")
+    print("   • API Configuration: Set keys in browser console")
+
+def try_launch_esqs():
+    """Attempt to launch ESQs using the appropriate launcher script"""
+    system = platform.system().lower()
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    
+    print("\n🚀 Attempting to launch ESQs properly...")
+    
+    try:
+        if system == "windows":
+            # Try PowerShell first, then batch
+            launchers = ["launch-esqs.ps1", "launch-esqs.bat"]
+            for launcher in launchers:
+                launcher_path = os.path.join(script_dir, launcher)
+                if os.path.exists(launcher_path):
+                    if launcher.endswith('.ps1'):
+                        subprocess.run(['powershell', '-ExecutionPolicy', 'Bypass', '-File', launcher_path, '-Local'], check=False)
+                    else:
+                        subprocess.run([launcher_path, '--local'], check=False)
+                    return True
+        else:
+            # Unix-like systems
+            launcher_path = os.path.join(script_dir, "launch-esqs.sh")
+            if os.path.exists(launcher_path):
+                # Make sure it's executable
+                os.chmod(launcher_path, 0o755)
+                subprocess.run([launcher_path, '--local'], check=False)
+                return True
+        
+        return False
+    except Exception as e:
+        print(f"⚠️  Could not auto-launch ESQs: {e}")
+        return False
+
+def main():
+    show_esqs_branding()
+    show_cli_error()
+    show_correct_access_methods()
+    show_help()
+    
+    # Check if we're in the right directory and can auto-launch
+    if os.path.exists("launch-esqs.sh") or os.path.exists("launch-esqs.bat") or os.path.exists("launch-esqs.ps1"):
+        print("\n🤔 Would you like me to launch ESQs properly for you? (y/n): ", end="")
+        try:
+            response = input().lower().strip()
+            if response in ['y', 'yes', '']:
+                if try_launch_esqs():
+                    print("✅ ESQs launch initiated! Check your browser.")
+                else:
+                    print("❌ Auto-launch failed. Please use the launcher scripts manually.")
+            else:
+                print("👍 Use the launcher scripts above to access ESQs.")
+        except KeyboardInterrupt:
+            print("\n👋 Use the launcher scripts to access ESQs.")
+    else:
+        print("\n💡 Make sure you're in the ESQs directory and use the launcher scripts.")
+    
+    print("\n" + "="*70)
+
+if __name__ == "__main__":
+    main()
