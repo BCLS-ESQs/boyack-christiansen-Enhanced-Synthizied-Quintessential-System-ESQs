@@ -1602,5 +1602,20 @@
         window.aiRouter = aiRouter;
         window.googleScholar = googleScholar;
     </script>
+    
+    <!-- GitHub Integration -->
+    <script src="github-integration.js"></script>
+    <script>
+        // Additional GitHub integration setup
+        console.log('📁 ESQs GitHub Integration loaded');
+        
+        // Expose GitHub integration for debugging
+        window.githubIntegration = githubIntegration;
+        
+        // Log available GitHub tools
+        if (typeof githubIntegration !== 'undefined') {
+            console.log('✅ GitHub Tools Available:', githubIntegration.getStatus().availableTools);
+        }
+    </script>
 </body>
 </html>
