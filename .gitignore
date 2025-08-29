@@ -10,3 +10,6 @@ openai-key.txt
 claude-key.txt
 gemini-key.txt
 node_modules/
+
+# Test files (for demonstration only)
+*-test.html
