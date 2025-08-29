@@ -1585,6 +1585,9 @@
                 document.getElementById('cynthiaResponse').classList.add('show');
             }, 500);
 
+            // Check for common user access issues and provide guidance
+            checkUserGuidance();
+
             // Check for API keys periodically
             setInterval(() => {
                 if (window.ESQS_API_KEYS && aiRouter) {
@@ -1597,6 +1600,78 @@
                 }
             }, 2000);
         });
+
+        // User guidance system
+        function checkUserGuidance() {
+            // Check URL parameters for guidance flags
+            const urlParams = new URLSearchParams(window.location.search);
+            const guidanceType = urlParams.get('guidance');
+            
+            // Check if user might be confused about access method
+            if (guidanceType === 'git-error' || urlParams.get('help') === 'git') {
+                showGitErrorGuidance();
+            } else if (guidanceType === 'first-time' || !localStorage.getItem('esqs-visited')) {
+                showFirstTimeGuidance();
+                localStorage.setItem('esqs-visited', 'true');
+            }
+        }
+
+        function showGitErrorGuidance() {
+            const guidance = `
+## 🔍 Looks like you're having git repository issues!
+
+**ESQs is a web application** - you're accessing it correctly now! 🎉
+
+### Common Confusion:
+If you saw errors like "fatal: not a git repository", that's because ESQs is designed to be used through this web interface, not through command-line git commands.
+
+### You're in the right place now:
+- ✅ This web interface is how you use ESQs
+- ✅ All integrations (GitHub, Dropbox, Lexis) work through this interface
+- ✅ No git commands needed for normal operation
+
+### Next Steps:
+1. **Connect your integrations** using the sidebar
+2. **Start a client session** with the quick actions
+3. **Use the AI assistant** for legal research and analysis
+
+Need help? Just ask me anything using the chat below! 💬
+            `;
+            
+            showCynthiaResponse(guidance);
+            addMessage("I was having git repository errors - how do I use ESQs?", 'user');
+        }
+
+        function showFirstTimeGuidance() {
+            setTimeout(() => {
+                const guidance = `
+## Welcome to ESQs! 🏛️
+
+I'm **Cynthia**, your AI legal intelligence assistant. ESQs is a comprehensive legal technology platform designed to enhance your practice.
+
+### What I can help you with:
+- 🔍 **Legal Research** via Lexis integration
+- 📝 **Document Drafting** and analysis
+- ⚖️ **Case Strategy** development
+- 🏛️ **Judicial Intelligence** insights
+- 📊 **Session Tracking** and billing
+
+### Quick Start:
+1. **Try asking me anything** in the chat below
+2. **Connect integrations** (GitHub, Dropbox, Lexis) in the sidebar
+3. **Start a client session** using the quick action buttons
+
+### Pro Tips:
+- Use **Deep Think mode** for complex legal analysis
+- All sessions are automatically tracked and saved
+- I can access multiple AI systems for the best answers
+
+Ready to get started? Ask me anything about law, cases, or how to use ESQs! 💼
+                `;
+                
+                showCynthiaResponse(guidance);
+            }, 1000);
+        }
 
         // Expose for debugging
         window.aiRouter = aiRouter;

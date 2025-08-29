@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ESQs Access Guide</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a365d 0%, #2d3748 50%, #1a202c 100%);
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+            padding: 2rem;
+        }
+        
+        .container {
+            background: rgba(26, 54, 93, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 3rem;
+            text-align: center;
+            border: 2px solid #d4af37;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+            max-width: 600px;
+        }
+        
+        .logo {
+            font-size: 3rem;
+            font-weight: bold;
+            color: #d4af37;
+            margin-bottom: 1rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+        
+        .message {
+            font-size: 1.2rem;
+            line-height: 1.6;
+            margin-bottom: 2rem;
+            color: #e2e8f0;
+        }
+        
+        .error-info {
+            background: rgba(252, 129, 129, 0.1);
+            border: 1px solid #fc8181;
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1.5rem 0;
+            text-align: left;
+        }
+        
+        .solution {
+            background: rgba(104, 211, 145, 0.1);
+            border: 1px solid #68d391;
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1.5rem 0;
+            text-align: left;
+        }
+        
+        .launch-btn {
+            display: inline-block;
+            background: linear-gradient(135deg, #d4af37 0%, #b8941f 100%);
+            color: #1a365d;
+            text-decoration: none;
+            padding: 1rem 2rem;
+            border-radius: 10px;
+            font-weight: bold;
+            font-size: 1.1rem;
+            margin: 1rem 0.5rem;
+            transition: transform 0.2s ease;
+        }
+        
+        .launch-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3);
+        }
+        
+        .countdown {
+            font-size: 0.9rem;
+            color: #a0aec0;
+            margin-top: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">ESQs</div>
+        <div class="message">
+            <strong>Git Repository Error Detected</strong><br>
+            You're trying to access ESQs incorrectly!
+        </div>
+        
+        <div class="error-info">
+            <strong>❌ Common Error:</strong><br>
+            <code>fatal: not a git repository (or any of the parent directories): .git</code><br><br>
+            This happens when trying to run git commands to access ESQs.
+        </div>
+        
+        <div class="solution">
+            <strong>✅ Solution:</strong><br>
+            ESQs is a <strong>web application</strong>, not a command-line tool. You need to access it through your browser.
+        </div>
+        
+        <a href="index.html?guidance=git-error" class="launch-btn">
+            🚀 Launch ESQs Correctly
+        </a>
+        
+        <a href="SETUP.md" class="launch-btn">
+            📖 Setup Guide
+        </a>
+        
+        <div class="countdown">
+            Auto-redirecting to ESQs in <span id="countdown">10</span> seconds...
+        </div>
+    </div>
+    
+    <script>
+        let timeLeft = 10;
+        const countdownElement = document.getElementById('countdown');
+        
+        const timer = setInterval(() => {
+            timeLeft--;
+            countdownElement.textContent = timeLeft;
+            
+            if (timeLeft <= 0) {
+                clearInterval(timer);
+                window.location.href = 'index.html?guidance=git-error';
+            }
+        }, 1000);
+        
+        // If user clicks anywhere, redirect immediately
+        document.addEventListener('click', () => {
+            clearInterval(timer);
+            window.location.href = 'index.html?guidance=git-error';
+        });
+    </script>
+</body>
+</html>
